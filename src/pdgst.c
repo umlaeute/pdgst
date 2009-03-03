@@ -10,13 +10,76 @@
 #include <locale.h>
 
 
-
+typedef struct _pdgst_prop {
+  struct _pdgst_prop*next;
+  t_symbol*name;
+  int flags;
+  GType type;
+} t_pdgst_property;
 
 /* the pdgst base-class */
 typedef struct _pdgst_core
 {
   GstElement*element;
+  t_pdgst_property*props;
 } t_pdgst_core;
+
+
+static t_pdgst_property*pdgst_addproperty(t_pdgst_property*props, GParamSpec*param)
+{
+  t_pdgst_property*p0=props;
+  t_pdgst_property*p=NULL;
+  t_symbol*s=gensym(param->name);
+
+  while(props && props->next) {
+    if(s==props->name) {
+      /* already stored property */
+      return p0;
+    }
+    props=props->next;
+  }
+
+  p=(t_pdgst_property*)getbytes(sizeof(t_pdgst_property));
+  p->next=NULL;
+  p->name=s;
+  p->flags=param->flags;
+  p->type=param->value_type;
+
+  startpost("added property '%s'", p->name->s_name);
+  if(NULL==p0) {
+    /* first entry */
+    post(" at the beginning");
+    return p;
+  } else {
+    endpost();
+    props->next=p;
+  }
+  return p0;
+}
+static t_pdgst_property*pdgst_getproperty(t_pdgst_property*props, t_symbol*name)
+{
+  while(props) {
+    if(props->name == name) {
+      return props;
+    }
+    props=props->next;
+  }
+  return NULL;
+}
+
+static void pdgst_killproperties(t_pdgst_property*props) {
+  while(props) {
+    t_pdgst_property*next=props->next;
+    props->next=NULL;
+    props->name=NULL;
+    props->flags=0;
+    props->type=0;
+
+    freebytes(props, sizeof(*props));
+    props=next;
+  }
+}
+
 
 
 
@@ -24,51 +87,86 @@ static t_class*pdgst_class;
 typedef struct _pdgst
 {
   t_object x_obj;
+  t_symbol*x_name;
   t_pdgst_core*x_gst;
 
   t_outlet*x_infout;
 } t_pdgst;
 
+static void pdgst_outputparam(t_pdgst*x, t_symbol*name, t_atom*a)
+{
+  t_atom ap[3];
+  SETSYMBOL(ap+0, gensym("property"));
+  SETSYMBOL(ap+1, name);
+
+  ap[2].a_type=a->a_type;
+  ap[2].a_w=a->a_w;
+
+  outlet_anything(x->x_infout, gensym("info"), 3, ap);
+}
 
 /* should be "static t_atom*" */
-static void pdgst_getparam(t_pdgst*x, t_symbol*s)
+static void pdgst_getparam(t_pdgst*x, t_pdgst_property*prop)
 {
-  if(x->x_gst&&x->x_gst->element) {
-    GstElement*element=x->x_gst->element;
-    GValue v;
-    GType t;
+  GstElement*element=x->x_gst->element;
+  GValue value = { 0, };
+  GValue destval = {0, };
 
-    t_symbol*s0;
-    t_float f;
-    t_atom a;
-    int success=0;
+  GValue *v=&value;
+  GType t;
 
-    g_object_get_property(G_OBJECT (element), s->s_name, &v);
+  t_symbol*s0;
+  t_float f;
+  t_atom a;
+  gboolean bool_v;
+  int success=1;
 
-    if(G_VALUE_HOLDS(&v,G_TYPE_STRING)) {
-         success=1;
-         s0=gensym(g_value_get_string(&v));
-         SETSYMBOL(&a, s0);
-    } else if (G_VALUE_HOLDS(&v,G_TYPE_INT)) {
-      success=1;
-      f=g_value_get_int(&v);
-      SETFLOAT(&a, f);
-    } else if  (G_VALUE_HOLDS(&v,G_TYPE_FLOAT)) {
-      success=1;
-      f=g_value_get_float(&v);
+
+  g_value_init (v, prop->type);
+  g_value_init (&destval, G_TYPE_FLOAT);
+
+  g_object_get_property(G_OBJECT (element), prop->name->s_name, v);
+
+  switch (G_VALUE_TYPE (v)) {
+  case G_TYPE_STRING:
+    {
+      const gchar* str=g_value_get_string(v);
+      if(NULL==str)
+        s0=&s_;
+      else
+        s0=gensym(str);
+      SETSYMBOL(&a, s0);
+    }
+    break;
+  case G_TYPE_BOOLEAN:
+    bool_v = g_value_get_boolean(v);
+    f=(bool_v);
+    SETFLOAT(&a, f);
+    break;
+  case G_TYPE_ENUM:
+    f = g_value_get_enum(v);
+    SETFLOAT(&a, f);
+    break;
+  default:
+    if(g_value_transform(v, &destval)) {
+      f=g_value_get_float(&destval);
       SETFLOAT(&a, f);
     } else {
-      pd_error(x, "don't know what to do...");
-      success=0;
+      if(G_VALUE_HOLDS_ENUM(v)) {
+        gint enum_value = g_value_get_enum(v);
+        f=enum_value;
+        SETFLOAT(&a, f);
+      } else {
+        pd_error(x, "[%s] don't know what to do with param '%s': %d", x->x_name->s_name, prop->name->s_name, G_VALUE_TYPE (v));
+        success=0;
+      }
     }
-    
-    if(success) {
-      outlet_list(x->x_infout, 0, 1, &a);
-    }
-    g_value_unset(&v);
-  } else {
-    // no element
   }
+  if(success) {
+    pdgst_outputparam(x, prop->name, &a);
+  }
+  if(v)
+    g_value_unset(v);
 }
 
 static void pdgst_setparam(t_pdgst*x, t_symbol*s, t_atom*ap)
@@ -88,6 +186,29 @@ static void pdgst_setparam(t_pdgst*x, t_symbol*s, t_atom*ap)
   }
 }
 
+
+static void pdgst_gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
+  post("_gst");
+
+
+}
+
+static void pdgst_any(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
+  if(!argc) {
+    /* query */
+    t_pdgst_property*prop=pdgst_getproperty(x->x_gst->props, s);
+    if(prop && prop->flags & G_PARAM_READABLE) {
+      pdgst_getparam(x, prop);
+    } else {
+      pd_error(x, "[%s] no query method for '%s'", x->x_name->s_name, s->s_name);
+      return;
+    }
+  }
+
+}
+
+
+
 static void pdgst_core_free(t_pdgst_core*gstcore)
 {
   if(!gstcore)return;
@@ -100,6 +221,17 @@ static t_pdgst_core*pdgst_core_new(GstElement*lmn, t_object*obj)
 {
   t_pdgst_core*ret=(t_pdgst_core*)getbytes(sizeof(t_pdgst_core));
   ret->element=lmn;
+  ret->props=NULL;
+  if(lmn) {
+    GParamSpec **property_specs;
+    guint num_properties, i;
+    property_specs = g_object_class_list_properties(G_OBJECT_GET_CLASS (lmn), &num_properties);
+    for (i = 0; i < num_properties; i++) {
+      ret->props=pdgst_addproperty(ret->props, property_specs[i]);
+    }
+    g_free (property_specs);
+  }
+
   return ret;
 }
 
@@ -107,18 +239,21 @@ static t_pdgst_core*pdgst_core_new(GstElement*lmn, t_object*obj)
 static void pdgst_free(t_pdgst*x) {
   if(x->x_gst)
     pdgst_core_free(x->x_gst);
+
   x->x_gst=NULL;
-  outlet_free(x->x_infout);
+  if(x->x_infout)
+    outlet_free(x->x_infout);
 }
 
 static void *pdgst_new(t_symbol*s, int argc, t_atom* argv) {
   t_pdgst*x=(t_pdgst*)pd_new(pdgst_class);
-  post("pdgst_new: %s", s->s_name);
+  x->x_name=s;
   x->x_gst=NULL;
   x->x_infout=NULL;
 
   if(gensym("pdgst")==s) {
     /* LATER make a controller.... */
+    x->x_infout=outlet_new(&x->x_obj, 0);
 
   } else {
     GstElement*lmn=gst_element_factory_make(s->s_name, NULL);
@@ -128,9 +263,7 @@ static void *pdgst_new(t_symbol*s, int argc, t_atom* argv) {
     }
     x->x_infout=outlet_new(&x->x_obj, 0);
     x->x_gst=pdgst_core_new(lmn, &x->x_obj);
-    post("created gstelement");
   }
-
 
   return x;
 }
@@ -138,8 +271,6 @@ static void *pdgst_new(t_symbol*s, int argc, t_atom* argv) {
 static void pdgst_class_setup(char*classname) {
   class_addcreator((t_newmethod)pdgst_new, gensym(classname), A_GIMME, 0);
 }
-
-
 
 
 static int pdgst_loader(t_canvas *canvas, char *classname)
@@ -209,6 +340,8 @@ void pdgst_setup(void)
                         sizeof(t_pdgst),
                         0 /* CLASS_NOINLET */,
                         A_GIMME, 0);
+  class_addmethod  (pdgst_class, (t_method)pdgst_gstMess, gensym("_gst"), A_GIMME, 0);
+  class_addanything(pdgst_class, pdgst_any);
 }
 
 /*

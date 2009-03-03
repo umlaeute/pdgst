@@ -39,7 +39,7 @@ LINUXINCLUDE =  -I../../../pd/src
 .c.pd_linux:
 	$(CC) $(LINUXCFLAGS) $(LINUXINCLUDE) -o $*.o -c $*.c
 	$(CC) -shared -o $*.pd_linux $*.o -lc -lm  $(shell pkg-config --libs gstreamer-0.10)
-	strip --strip-unneeded $*.pd_linux
+	echo strip --strip-unneeded $*.pd_linux
 	rm -f $*.o
 
 # ----------------------- Mac OSX -----------------------
