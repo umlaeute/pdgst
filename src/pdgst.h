@@ -52,6 +52,25 @@
 
 
 
+typedef struct _pdgst_prop {
+  struct _pdgst_prop*next;
+  t_symbol*name;
+  int flags;
+  GType type;
+} t_pdgst_property;
+t_pdgst_property*pdgst_addproperty(t_pdgst_property*props, GParamSpec*param);
+t_pdgst_property*pdgst_getproperty(t_pdgst_property*props, t_symbol*name);
+void pdgst_killproperties(t_pdgst_property*props);
+
+t_class*pdgst_findclass(t_symbol*s);
+t_class*pdgst_addclass(t_symbol*s);
+
+
+void pdgst_element_setup(void);
+int pdgst_element_setup_class(char*classname);
+
+void pdgst_capsfilter_setup(void);
+int pdgst_capsfilter_setup_class(char*classname);
 
 
 static char *pdgst_version = "$Revision: 0.0 $";

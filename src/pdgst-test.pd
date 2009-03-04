@@ -1,4 +1,4 @@
-#N canvas 1877 66 450 643 10;
+#N canvas 288 91 450 643 10;
 #X obj 151 213 videotestsrc;
 #X obj 34 261 glimagesink;
 #X obj 38 75 pdgst;
@@ -31,6 +31,7 @@
 #X obj 192 572 print xxx;
 #X msg 296 538 minor-type 8;
 #X msg 261 232 butter;
+#X obj 78 479 audio/x-raw-float channels=10;
 #X connect 0 0 16 0;
 #X connect 1 0 20 0;
 #X connect 3 0 0 0;
