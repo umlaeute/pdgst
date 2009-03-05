@@ -1,4 +1,5 @@
 EXT=pd_linux
+CC=gcc 
 
 current: $(EXT)
 
@@ -6,27 +7,23 @@ NAME=pdgst
 SOURCES=$(sort $(filter %.c, $(wildcard *.c)))
 TARGETS = $(SOURCES:.c=.o)
 
+GST_CFLAGS=$(shell pkg-config --cflags gstreamer-0.10)
+GST_LDFLAGS=$(shell pkg-config --libs gstreamer-0.10)
+
 # ----------------------- LINUX i386 -----------------------
 
 .SUFFIXES: .$(EXT)
 
-LINUXCFLAGS = -DPD -O2 -funroll-loops -fomit-frame-pointer -fPIC \
-    -Wall -W -Wshadow -Wstrict-prototypes $(shell pkg-config --cflags gstreamer-0.10) \
-    -Wno-unused -Wno-parentheses -Wno-switch $(CFLAGS)
-
+LINUXCFLAGS = -g -O2 -fPIC -DPD $(GST_CFLAGS) $(CFLAGS)
 LINUXINCLUDE =  -I../../../pd/src
-
-LINUXLDFLAGS = -lc -lm  $(shell pkg-config --libs gstreamer-0.10)
+LINUXLDFLAGS = -lc -lm  $(GST_LDFLAGS)
 
 $(EXT): $(NAME).$(EXT)
 
-$(SOURCES): pdgst.h
-
 $(NAME).$(EXT): $(TARGETS)
-	$(CC) -shared -o $*.$(EXT) $^ $(LINUXLDFLAGS)
-	echo strip --strip-unneeded $*.pd_linux
+	$(CC) -shared -export_dynamic $(LINUXLDFLAGS) -o $*.$(EXT) $^
 
-$(TARGETS): %.o : %.c
+$(TARGETS): %.o : %.c pdgst.h Makefile
 	$(CC) $(LINUXCFLAGS) $(LINUXINCLUDE) -o $*.o -c $*.c
 
 clean:

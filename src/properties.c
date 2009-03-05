@@ -26,7 +26,7 @@ t_pdgst_property*pdgst_addproperty(t_pdgst_property*props, GParamSpec*param)
     //    post(" at the beginning");
     return p;
   } else {
-    endpost();
+    //endpost();
     props->next=p;
   }
   return p0;

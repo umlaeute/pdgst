@@ -40,6 +40,24 @@ static void pdgst__send_symbol(t_symbol*s)
   pdgst__send(1, ap);
 }
 
+
+void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_elem*x) {
+  t_method cb=x->l_busCallback;
+  GstElement*src=NULL;
+  if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
+    src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
+
+  if(!src) {
+    error("fixme: message without source");
+    return;
+  }
+
+  if(src==x->l_element) {
+    (*(t_gotfn)(*cb))(x, msg);
+  }
+
+}
+
 static GstElement*pdgst__getcontainer(t_pdgst_elem*element)
 {
   /* LATER: try to find the responsible [pdgst] object for the given element 
@@ -52,7 +70,11 @@ void pdgst_bin_add(t_pdgst_elem*element)
 {
   /* LATER: do not ignore canvas within the element structure0 */
   GstElement*gele=pdgst__getcontainer(element);
+  GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
+
   gst_bin_add(GST_BIN(gele), element->l_element);
+  g_signal_connect (bus, "message", G_CALLBACK(pdgst__element_buscallback), element);
+  gst_object_unref (bus);
 }
 
 void pdgst_bin_remove(t_pdgst_elem*element)
@@ -196,6 +218,11 @@ static void pdgst__free(t_pdgst*x) {
   x->x_infout=NULL;
 }
 
+void cb_message_error (GstBus*bus,GstMessage*msg,t_pdgst*x) {
+  post("%x is a message!", msg);
+  post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
+}
+
 static void *pdgst__new(t_symbol*s, int argc, t_atom* argv) {
   /* LATER make a controller.... */
   t_pdgst*x=(t_pdgst*)pd_new(pdgst_class);
@@ -207,7 +234,10 @@ static void *pdgst__new(t_symbol*s, int argc, t_atom* argv) {
 
   /* set up the bus watch */
   bus = gst_pipeline_get_bus (GST_PIPELINE (x->x_pipeline));
-  gst_bus_add_watch (bus, pdgst__bus_callback, x);
+  //gst_bus_add_watch (bus, pdgst__bus_callback, x);
+
+  gst_bus_add_signal_watch (bus);
+
   gst_object_unref (bus);
 
   return x;

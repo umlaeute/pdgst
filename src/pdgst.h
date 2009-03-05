@@ -58,6 +58,7 @@ typedef struct _pdgst_prop {
   int flags;
   GType type;
 } t_pdgst_property;
+
 t_pdgst_property*pdgst_addproperty(t_pdgst_property*props, GParamSpec*param);
 t_pdgst_property*pdgst_getproperty(t_pdgst_property*props, t_symbol*name);
 void pdgst_killproperties(t_pdgst_property*props);
@@ -69,12 +70,17 @@ t_class*pdgst_addclass(t_symbol*s);
 #define x_element x_elem.l_element
 #define x_obj x_elem.l_obj
 #define x_canvas x_elem.l_canvas
+
+typedef void (*pdgst_buscallback_fun_t)(t_object*x, GstMessage*msg);
+
 typedef struct _pdgst_elem
 {
   t_object l_obj;
   t_canvas  *l_canvas;
   GstElement*l_element;
+  t_method l_busCallback;
 } t_pdgst_elem;
+
 
 void pdgst_element_setup(void);
 int pdgst_element_setup_class(char*classname);
