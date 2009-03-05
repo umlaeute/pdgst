@@ -66,11 +66,29 @@ t_class*pdgst_findclass(t_symbol*s);
 t_class*pdgst_addclass(t_symbol*s);
 
 
+#define x_element x_elem.l_element
+#define x_obj x_elem.l_obj
+#define x_canvas x_elem.l_canvas
+typedef struct _pdgst_elem
+{
+  t_object l_obj;
+  t_canvas  *l_canvas;
+  GstElement*l_element;
+} t_pdgst_elem;
+
 void pdgst_element_setup(void);
 int pdgst_element_setup_class(char*classname);
 
 void pdgst_capsfilter_setup(void);
 int pdgst_capsfilter_setup_class(char*classname);
+
+t_symbol*pdgst_privatesymbol(void);
+void pdgst_bin_add(t_pdgst_elem*element);
+void pdgst_bin_remove(t_pdgst_elem*element);
+GstBin*pdgst_get_bin(t_pdgst_elem*element);
+
+
+void pdgst_loop_setup(void);
 
 
 static char *pdgst_version = "$Revision: 0.0 $";

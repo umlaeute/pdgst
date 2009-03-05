@@ -9,31 +9,207 @@
 
 #include <locale.h>
 
+#ifdef x_obj
+# undef x_obj
+#endif
+
+static t_symbol*s_gst=NULL;
+static GstElement *s_pipeline=NULL;
+
+
+
 static t_class*pdgst_class=NULL;
 typedef struct _pdgst
 {
   t_object x_obj;
   t_outlet*x_infout;
+  GstElement*x_pipeline;
 } t_pdgst;
+
+static void pdgst__send(int argc, t_atom*argv)
+{
+  if(s_gst->s_thing) {
+    typedmess(s_gst->s_thing, s_gst, argc, argv);
+  }
+}
+
+static void pdgst__send_symbol(t_symbol*s)
+{
+  t_atom ap[1];
+  SETSYMBOL(ap, s);
+  pdgst__send(1, ap);
+}
+
+static GstElement*pdgst__getcontainer(t_pdgst_elem*element)
+{
+  /* LATER: try to find the responsible [pdgst] object for the given element 
+   * and extract the bin/pipeline from there
+   */
+  return s_pipeline;
+}
+
+void pdgst_bin_add(t_pdgst_elem*element)
+{
+  /* LATER: do not ignore canvas within the element structure0 */
+  GstElement*gele=pdgst__getcontainer(element);
+  gst_bin_add(GST_BIN(gele), element->l_element);
+}
+
+void pdgst_bin_remove(t_pdgst_elem*element)
+{
+  GstElement*gele=pdgst__getcontainer(element);
+  gst_bin_remove(GST_BIN(gele), element->l_element);
+}
+
+GstBin*pdgst_get_bin(t_pdgst_elem*element)
+{
+  /* LATER: try to find the responsible [pdgst] object for the given element 
+   * and extract the bin/pipeline from there
+   */
+  return GST_BIN(s_pipeline);
+}
+
 
 
 
 /* ================================================================== */
 /* "real" pdgst object for meta-control */
 
-static void pdgst_gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
-  post("_gst");
+static void pdgst__gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
+  post("_gst: %s", s->s_name);
 }
 
-static void pdgst_free(t_pdgst*x) {
-  if(x->x_infout)
-    outlet_free(x->x_infout);
+/* rebuild the gst-graph */
+static void pdgst__rebuild(t_pdgst*x) {
+  pdgst__send_symbol(gensym("deregister"));
+  pdgst__send_symbol(gensym("register"));
+  pdgst__send_symbol(gensym("connect"));
 }
 
-static void *pdgst_new(t_symbol*s, int argc, t_atom* argv) {
+static void pdgst__start(t_pdgst*x) 
+{
+  gst_element_set_state (x->x_pipeline, GST_STATE_PLAYING);
+}
+
+static void pdgst__stop(t_pdgst*x) {
+  gst_element_set_state (x->x_pipeline, GST_STATE_PAUSED);
+}
+
+static void pdgst__float(t_pdgst*x, t_floatarg f) 
+{
+  if(f>0.f)
+    pdgst__start(x);
+  else
+    pdgst__stop(x);
+}
+
+
+static gboolean pdgst__bus_callback (GstBus     *bus,
+                                    GstMessage *message,
+                                    gpointer    data)
+{
+  t_pdgst*x=(t_pdgst*)data;
+  //  post("hey %x, got message '%s'", x, GST_MESSAGE_TYPE_NAME (message));
+
+  GstElement*src=NULL;
+  if(GST_IS_ELEMENT(GST_MESSAGE_SRC(message)))
+    src=GST_ELEMENT(GST_MESSAGE_SRC(message));
+
+  if(src) {
+    gchar *name;
+    g_object_get (G_OBJECT (src), "name", &name, NULL);
+    post("got message from %s", name);
+    g_free (name);
+  }
+
+  switch (GST_MESSAGE_TYPE (message)) {
+  case GST_MESSAGE_UNKNOWN:
+    break;
+  case GST_MESSAGE_EOS:
+    /* end-of-stream */
+    post("EOS");
+    break;
+  case GST_MESSAGE_ERROR: {
+    GError *err;
+    gchar *debug;
+
+    gst_message_parse_error (message, &err, &debug);
+    pd_error (x, "%s", err->message);
+    g_error_free (err);
+    g_free (debug);
+
+    break;
+  }
+
+  case GST_MESSAGE_WARNING:
+    break;
+  case GST_MESSAGE_INFO:
+    break;
+  case GST_MESSAGE_TAG:
+    break;
+  case GST_MESSAGE_BUFFERING:
+    break;
+  case GST_MESSAGE_STATE_CHANGED:
+    break;
+  case GST_MESSAGE_STATE_DIRTY:
+    break;
+  case GST_MESSAGE_STEP_DONE:
+    break;
+  case GST_MESSAGE_CLOCK_PROVIDE:
+    break;
+  case GST_MESSAGE_CLOCK_LOST:
+    break;
+  case GST_MESSAGE_NEW_CLOCK:
+    break;
+  case GST_MESSAGE_STRUCTURE_CHANGE:
+    break;
+  case GST_MESSAGE_STREAM_STATUS:
+    break;
+  case GST_MESSAGE_APPLICATION:
+    break;
+  case GST_MESSAGE_ELEMENT:
+    break;
+  case GST_MESSAGE_SEGMENT_START:
+    break;
+  case GST_MESSAGE_SEGMENT_DONE:
+    break;
+  case GST_MESSAGE_DURATION:
+    break;
+  case GST_MESSAGE_LATENCY:
+    break;
+  case GST_MESSAGE_ASYNC_START:
+    break;
+  case GST_MESSAGE_ASYNC_DONE:
+    break;
+  default:
+    post("hmm, unknown message of type '%s'", GST_MESSAGE_TYPE_NAME(message));
+    break;
+  }
+
+
+  return TRUE;
+}
+
+
+static void pdgst__free(t_pdgst*x) {
+  if(x->x_infout) outlet_free(x->x_infout);
+  x->x_infout=NULL;
+}
+
+static void *pdgst__new(t_symbol*s, int argc, t_atom* argv) {
   /* LATER make a controller.... */
   t_pdgst*x=(t_pdgst*)pd_new(pdgst_class);
+  GstBus*bus=NULL;
+  
   x->x_infout=outlet_new(&x->x_obj, 0);
+
+  x->x_pipeline=s_pipeline;
+
+  /* set up the bus watch */
+  bus = gst_pipeline_get_bus (GST_PIPELINE (x->x_pipeline));
+  gst_bus_add_watch (bus, pdgst__bus_callback, x);
+  gst_object_unref (bus);
+
   return x;
 }
 
@@ -44,11 +220,9 @@ static void *pdgst_new(t_symbol*s, int argc, t_atom* argv) {
 
 static int pdgst_loader(t_canvas *canvas, char *classname)
 {
-  post("pdgst: trying to load '%s'", classname);
   if(pdgst_element_setup_class(classname)) {
     return 1;
   }
-  post("pdgst: trying to capsload '%s'", classname);
   if(pdgst_capsfilter_setup_class(classname)) {
     return 1;
   }
@@ -57,7 +231,7 @@ static int pdgst_loader(t_canvas *canvas, char *classname)
   return (0);
 }
 
-static int pdgst_loader_setup(void)
+static int pdgst_loader_init(void)
 {
   GError *err = NULL;
   guint major=0, minor=0, micro=0, nano=0;
@@ -84,7 +258,8 @@ static int pdgst_loader_setup(void)
     return 0;
   }
 
-  sys_register_loader(pdgst_loader);
+  s_pipeline=gst_pipeline_new(NULL);
+
 
   return 1;
 }
@@ -93,6 +268,7 @@ static int pdgst_loader_setup(void)
 void pdgst_setup(void)
 {
   char*locale=NULL;
+  int err=0;
 
   post("pdgst %s",pdgst_version);  
   post("\t(copyleft) IOhannes m zmoelnig @ IEM / KUG");
@@ -102,19 +278,35 @@ void pdgst_setup(void)
 
   locale=setlocale(LC_NUMERIC, NULL);
   setlocale(LC_NUMERIC, "C");
-  pdgst_loader_setup();
+  err=pdgst_loader_init();
+  if(err)pdgst_loop_setup();
   setlocale(LC_NUMERIC, locale);
+  if(!err)return;
+
+  sys_register_loader(pdgst_loader);
 
   pdgst_class=class_new(gensym("pdgst"), 
-                        (t_newmethod)pdgst_new,
-                        (t_method)pdgst_free,
+                        (t_newmethod)pdgst__new,
+                        (t_method)pdgst__free,
                         sizeof(t_pdgst),
                         0 /* CLASS_NOINLET */,
                         A_GIMME, 0);
-  class_addmethod  (pdgst_class, (t_method)pdgst_gstMess, gensym("_gst"), A_GIMME, 0);
+  class_addmethod  (pdgst_class, (t_method)pdgst__gstMess, s_gst, A_GIMME, 0);
+  class_addbang  (pdgst_class, (t_method)pdgst__rebuild);
+  class_addfloat  (pdgst_class, (t_method)pdgst__float);
+  class_addmethod  (pdgst_class, (t_method)pdgst__start, gensym("start"), 0);
+  class_addmethod  (pdgst_class, (t_method)pdgst__stop, gensym("stop"), 0);
 
   pdgst_capsfilter_setup();
+
+  s_gst=pdgst_privatesymbol();
 }
+
+t_symbol*pdgst_privatesymbol(void) {
+ return gensym("__gst");
+}
+
+
 
 /*
  * interesting stuff:

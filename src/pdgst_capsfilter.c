@@ -1,10 +1,12 @@
 #include "pdgst.h"
 
+
+static t_symbol*s_gst=NULL;
+
 static t_class*pdgst_capsfilter_class=NULL;
 typedef struct _pdgst_capsfilter
 {
-  t_object x_obj;
-  GstElement*element;
+  t_pdgst_elem x_elem;
 } t_pdgst_capsfilter;
 
 
@@ -55,5 +57,6 @@ void pdgst_capsfilter_setup(void)
                                    sizeof(t_pdgst_capsfilter),
                                    0 /* CLASS_NOINLET */,
                                    A_GIMME, 0);
-  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter_gstMess, gensym("_gst"), A_GIMME, 0);
+  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter_gstMess, s_gst, A_GIMME, 0);
+  s_gst=pdgst_privatesymbol();
 }

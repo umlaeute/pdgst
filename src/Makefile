@@ -20,6 +20,8 @@ LINUXLDFLAGS = -lc -lm  $(shell pkg-config --libs gstreamer-0.10)
 
 $(EXT): $(NAME).$(EXT)
 
+$(SOURCES): pdgst.h
+
 $(NAME).$(EXT): $(TARGETS)
 	$(CC) -shared -o $*.$(EXT) $^ $(LINUXLDFLAGS)
 	echo strip --strip-unneeded $*.pd_linux
