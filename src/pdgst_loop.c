@@ -14,7 +14,7 @@ static t_pdgst_loop*pdgst_loop=NULL;
 static void pdgst_loop_tick(t_pdgst_loop*x)
 {
   if(g_main_context_iteration(x->x_gcontext, FALSE)) {
-    post("gstloop: processed events");
+    //    post("gstloop: processed events");
   } else {
     //    post("gstloop: nada");
   }
