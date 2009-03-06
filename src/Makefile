@@ -21,7 +21,7 @@ LINUXLDFLAGS = -lc -lm  $(GST_LDFLAGS)
 $(EXT): $(NAME).$(EXT)
 
 $(NAME).$(EXT): $(TARGETS)
-	$(CC) -shared -export_dynamic $(LINUXLDFLAGS) -o $*.$(EXT) $^
+	$(CC) -shared $(LINUXLDFLAGS) -o $*.$(EXT) $^
 
 $(TARGETS): %.o : %.c pdgst.h Makefile
 	$(CC) $(LINUXCFLAGS) $(LINUXINCLUDE) -o $*.o -c $*.c
