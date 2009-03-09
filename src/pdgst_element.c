@@ -48,15 +48,16 @@ static void pdgst_outputparam(t_pdgst_element*x, t_symbol*name, t_atom*a)
   pdgst_element__infoout(x, 3, ap);
 }
 
-static t_atom*pdgst_gvalue2atom(GValue*v)
+static t_atom*pdgst_gvalue2atom(const GValue*v, t_atom*a0)
 {
-  t_atom*a=(t_atom*)getbytes(sizeof(t_atom));
+  t_atom*a=a0;
   t_symbol*s=NULL;
   t_float f=0;
   gboolean bool_v;
   GValue destval = {0, };
   int success=1;
-
+  if(NULL==a)
+    a=(t_atom*)getbytes(sizeof(t_atom));
 
   g_value_init (&destval, G_TYPE_FLOAT);
 
@@ -112,16 +113,15 @@ static void pdgst_getparam(t_pdgst_element*x, t_pdgst_property*prop)
   GValue value = { 0, };
   GValue *v=&value;
   GType t;
-
-  t_atom*a;
+  t_atom a, *ap;
 
   g_value_init (v, prop->type);
 
   g_object_get_property(G_OBJECT (element), prop->name->s_name, v);
-  a=pdgst_gvalue2atom(v);
+  ap=pdgst_gvalue2atom(v, &a);
 
-  if(a) {
-    pdgst_outputparam(x, prop->name, a);
+  if(ap) {
+    pdgst_outputparam(x, prop->name, ap);
   }
   if(v)
     g_value_unset(v);
@@ -169,9 +169,10 @@ static void pdgst_element__connect_init(t_pdgst_element*x) {
 
 
 
-gboolean pdgst_element__message_element_foreach(GQuark field_id, const GValue *value, t_pdgst_element*x)
+gboolean pdgst_element__message_element_foreach(GQuark field_id, const GValue *value, gpointer x0)
 {
-
+  t_pdgst_element*x=(t_pdgst_element*)x0;
+  post("element %x has value %x", field_id, value);
 
   return TRUE;
 }
@@ -199,30 +200,69 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
   case GST_MESSAGE_ERROR: {
     GError *err;
     gchar *debug;
+    t_atom ap[2];
 
     gst_message_parse_error (message, &err, &debug);
-    pd_error (x, "%s", err->message);
-    error ("%s", debug);
+
+    SETSYMBOL(ap+0, gensym(g_quark_to_string(err->domain)));
+    SETFLOAT(ap+1, err->code);
+
+    pd_error (x, "[%s]: %s", x->x_name->s_name, err->message);
+    pd_error (x, "[%s]: %s", debug);
     g_error_free (err);
     g_free (debug);
 
-    pdgst_element__infoout_mess(x, gensym("error"), 0, NULL);
-
-    break;
+    pdgst_element__infoout_mess(x, gensym("error"), 2, ap);
   }
+    break;
+#if GST_CHECK_VERSION(0, 10, 12)
+  case GST_MESSAGE_WARNING: {
+    GError *err;
+    gchar *debug;
+    t_atom ap[2];
 
-  case GST_MESSAGE_WARNING:
-    CALLBACK_UNIMPLEMENTED(x);
+    gst_message_parse_warning (message, &err, &debug);
+
+    SETSYMBOL(ap+0, gensym(g_quark_to_string(err->domain)));
+    SETFLOAT(ap+1, err->code);
+
+    error ("[%s]: %s", x->x_name->s_name, err->message);
+    error ("[%s]: %s", debug);
+    g_error_free (err);
+    g_free (debug);
+
+    pdgst_element__infoout_mess(x, gensym("warning"), 2, ap);
+  }
     break;
-  case GST_MESSAGE_INFO:
-    CALLBACK_UNIMPLEMENTED(x);
+  case GST_MESSAGE_INFO: {
+    GError *err;
+    gchar *debug;
+    t_atom ap[2];
+
+    gst_message_parse_info (message, &err, &debug);
+
+    SETSYMBOL(ap+0, gensym(g_quark_to_string(err->domain)));
+    SETFLOAT(ap+1, err->code);
+
+    post ("[%s]: %s", x->x_name->s_name, err->message);
+    post ("[%s]: %s", debug);
+    g_error_free (err);
+    g_free (debug);
+
+    pdgst_element__infoout_mess(x, gensym("info"), 2, ap);
+  }
     break;
+#endif /* gst-0.10.12 */
   case GST_MESSAGE_TAG: {
+#if 0
     GstTagList*tag_list;
     gst_message_parse_tag               (message, &tag_list);
     /* LATER: call a help-function for each tag and output that 1-message-per-tag */
+#endif
+    CALLBACK_UNIMPLEMENTED(x) ;
   }
     break;
+#if GST_CHECK_VERSION(0, 10, 11)
   case GST_MESSAGE_BUFFERING: {
     gint percent, avg_in, avg_out;
     gint64 buffering_left;
@@ -235,14 +275,16 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
 
     SETFLOAT(ap, (t_float)percent);
     pdgst_element__infoout_mess(x, gensym("buffering"), 1, ap);
-
+#if GST_CHECK_VERSION(0, 10, 20)
     SETFLOAT(ap+0, (t_float)mode);
     SETFLOAT(ap+1, (t_float)avg_in);
     SETFLOAT(ap+2, (t_float)avg_out);
     SETFLOAT(ap+3, (t_float)buffering_left);
     pdgst_element__infoout_mess(x, gensym("buffering_stats"), 4, ap);
   }
+#endif /* gst-0.10.20 */
     break;
+#endif /* gst-0.10.11 */
   case GST_MESSAGE_STATE_CHANGED: {
     GstState oldstate,  newstate,  pending;
     t_atom ap[3];
@@ -271,28 +313,69 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
   case GST_MESSAGE_NEW_CLOCK:
     pdgst_element__infoout_mess(x, gensym("clock_new"), 0, NULL);
     break;
-  case GST_MESSAGE_STRUCTURE_CHANGE:
-    CALLBACK_UNIMPLEMENTED(x);
+#if GST_CHECK_VERSION(0, 10, 22)
+  case GST_MESSAGE_STRUCTURE_CHANGE: {
+    /* used internally by gstreamer; should never be forwarded to use */
+    GstStructureChangeType type;
+    GstElement *owner;
+    gboolean busy;
+    t_atom ap[3];
+    gchar*name;
+
+    gst_message_parse_structure_change  (message, &type, &owner, &busy);
+
+    SETFLOAT(ap+0, type);
+
+    g_object_get (G_OBJECT (owner), "name", &name, NULL);
+    SETSYMBOL(ap+1, gensym(name));
+    g_free (name);
+
+    SETFLOAT(ap+2, busy);
+
+    pdgst_element__infoout_mess(x, gensym("structure_change"), 3, ap);
+  }
     break;
+#endif /* gst-0.10.22 */
   case GST_MESSAGE_STREAM_STATUS:
+    /* not implemented upstream */
     CALLBACK_UNIMPLEMENTED(x);
     break;
-  case GST_MESSAGE_APPLICATION:
-    CALLBACK_UNIMPLEMENTED(x);
-    break;
-  case GST_MESSAGE_ELEMENT: {
+  case GST_MESSAGE_APPLICATION: {
     const GstStructure * structure = gst_message_get_structure(message);
     int index=0;
-    //    gst_structure_foreach               (structure, pdgst_element__message_element_foreach, x);
-    post("element-structure: %s", gst_structure_to_string(structure));
+    t_atom ap[3];
+    const gchar*structname= gst_structure_get_name(structure);
+    SETSYMBOL(ap+0, gensym( structname) );
 
     for(index=0; index<gst_structure_n_fields(structure); index++) {
       const gchar*name=gst_structure_nth_field_name        (structure, index);
       const GValue*value= gst_structure_get_value(structure, name);
-      post("%s[%s] has value %x", gst_structure_get_name(structure), name, value);
+      SETSYMBOL(ap+1, gensym(name));
+      if(pdgst_gvalue2atom(value, ap+2)) {
+        pdgst_element__infoout_mess(x, gensym("application"), 3, ap);
+      } else {
+        pdgst_element__infoout_mess(x, gensym("application"), 2, ap);
+      }
     }
-    post("index: read %d values", index);
-    CALLBACK_UNIMPLEMENTED(x);
+  }
+    break;
+  case GST_MESSAGE_ELEMENT: {
+    const GstStructure * structure = gst_message_get_structure(message);
+    int index=0;
+    t_atom ap[3];
+    const gchar*structname= gst_structure_get_name(structure);
+    SETSYMBOL(ap+0, gensym( structname) );
+
+    for(index=0; index<gst_structure_n_fields(structure); index++) {
+      const gchar*name=gst_structure_nth_field_name        (structure, index);
+      const GValue*value= gst_structure_get_value(structure, name);
+      SETSYMBOL(ap+1, gensym(name));
+      if(pdgst_gvalue2atom(value, ap+2)) {
+        pdgst_element__infoout_mess(x, gensym("element"), 3, ap);
+      } else {
+        pdgst_element__infoout_mess(x, gensym("element"), 2, ap);
+      }
+    }
   }
     break;
   case GST_MESSAGE_SEGMENT_START: {
@@ -334,6 +417,7 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
     break;
   case GST_MESSAGE_LATENCY:
     break;
+#if GST_CHECK_VERSION(0, 10, 13)
   case GST_MESSAGE_ASYNC_START: {
     gboolean new_base_time;
     t_atom ap[1];
@@ -347,6 +431,7 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
   case GST_MESSAGE_ASYNC_DONE:
     pdgst_element__infoout_mess(x, gensym("async_done"), 0, NULL);
     break;
+#endif /* gst-0.10.13 */
   default:
     post("hmm, unknown message of type '%s'", GST_MESSAGE_TYPE_NAME(message));
     break;
