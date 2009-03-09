@@ -14,6 +14,10 @@
 #endif
 
 static t_symbol*s_gst=NULL;
+static t_symbol*s_gst_source=NULL;
+static t_symbol*s_gst_filter=NULL;
+static t_symbol*s_gst_sink=NULL;
+
 static GstElement *s_pipeline=NULL;
 
 
@@ -26,11 +30,14 @@ typedef struct _pdgst
   GstElement*x_pipeline;
 } t_pdgst;
 
+static void pdgst__send_(t_symbol*s, int argc, t_atom*argv)
+{
+  if(s->s_thing)typedmess(s->s_thing, s_gst, argc, argv);
+}
+
 static void pdgst__send(int argc, t_atom*argv)
 {
-  if(s_gst->s_thing) {
-    typedmess(s_gst->s_thing, s_gst, argc, argv);
-  }
+  pdgst__send_(s_gst, argc, argv);
 }
 
 static void pdgst__send_symbol(t_symbol*s)
@@ -103,9 +110,15 @@ static void pdgst__gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
 
 /* rebuild the gst-graph */
 static void pdgst__rebuild(t_pdgst*x) {
+#if 0
   pdgst__send_symbol(gensym("deregister"));
   pdgst__send_symbol(gensym("register"));
   pdgst__send_symbol(gensym("connect"));
+#else
+  t_atom ap[1];
+  SETSYMBOL(ap,  gensym("connect"));
+  pdgst__send_(s_gst_source, 1, ap);
+#endif
 }
 
 static void pdgst__start(t_pdgst*x) 
@@ -333,9 +346,20 @@ void pdgst_setup(void)
   class_addmethod  (pdgst_class, (t_method)pdgst__start, gensym("start"), 0);
   class_addmethod  (pdgst_class, (t_method)pdgst__stop, gensym("stop"), 0);
 
-  pdgst_capsfilter_setup();
+  //  pdgst_capsfilter_setup();
 
-  s_gst=pdgst_privatesymbol();
+  if(!s_gst) {
+    const char*s_gst_=pdgst_privatesymbol()->s_name;
+    char buf[MAXPDSTRING];
+    s_gst=pdgst_privatesymbol();
+    snprintf(buf, MAXPDSTRING-1, "%s_source", s_gst_); buf[MAXPDSTRING-1]=0;
+    s_gst_source=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_filter", s_gst_); buf[MAXPDSTRING-1]=0;
+    s_gst_filter=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_sink", s_gst_); buf[MAXPDSTRING-1]=0;
+    s_gst_sink=gensym(buf);
+  }
+
 }
 
 t_symbol*pdgst_privatesymbol(void) {

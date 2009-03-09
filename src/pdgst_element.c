@@ -15,7 +15,28 @@ typedef struct _pdgst_element
 } t_pdgst_element;
 
 static t_symbol*s_gst=NULL;
+static t_symbol*s_gst_source=NULL;
+static t_symbol*s_gst_filter=NULL;
+static t_symbol*s_gst_sink=NULL;
 
+
+static void pdgst_element__gstout(t_pdgst_element*x, int argc, t_atom*argv)
+{
+  outlet_anything(x->x_gstout, s_gst, argc, argv);
+}
+static void pdgst_element__gstout_mess(t_pdgst_element*x, t_symbol*s, int argc, t_atom*argv)
+{
+  int ac=argc+1;
+  t_atom*av=(t_atom*)getbytes(sizeof(t_atom)*ac);
+  SETSYMBOL(av, s);
+  memcpy(av+1, argv, (sizeof(t_atom)*argc));
+
+  pdgst_element__gstout(x, ac, av);
+
+  freebytes(av, sizeof(t_atom)*(ac));
+  av=NULL;
+  ac=0;
+}
 
 static void pdgst_element__infoout(t_pdgst_element*x, int argc, t_atom*argv)
 {
@@ -143,10 +164,18 @@ static void pdgst_setparam(t_pdgst_element*x, t_pdgst_property*prop, t_atom*ap)
     }
 }
 
-static void pdgst_element__connect(t_pdgst_element*x, t_symbol*s) {
+static void pdgst_element__connect_init(t_pdgst_element*x) {
+  t_atom ap[1];
+  SETSYMBOL(ap, x->x_gstname);
+
+  pdgst_element__gstout_mess(x, gensym("connect"), 1, ap);
+}
+
+static void pdgst_element__connect(t_pdgst_element*x, t_symbol*s, t_symbol*spad) {
   gboolean res=FALSE;
   //  post("need to connect %s to %s",  s->s_name, x->x_gstname->s_name);
   GstBin*bin=pdgst_get_bin(&x->x_elem);
+  gchar*srcpad=NULL;
 
   GstElement*src = gst_bin_get_by_name (bin, s->s_name);
   if(!src) {
@@ -154,26 +183,18 @@ static void pdgst_element__connect(t_pdgst_element*x, t_symbol*s) {
     return;
   }
 
-  post("linking '%s' to '%s'", s->s_name, x->x_gstname->s_name);
-  res=gst_element_link_many(src, x->x_element, NULL);
-  post("linking %s successfull", (res?"was":"was NOT"));
+
+  if(spad)
+    srcpad=spad->s_name;
+
+  //  post("linking '%s' to '%s'", s->s_name, x->x_gstname->s_name);
+  res=gst_element_link_pads(src, NULL, x->x_element, NULL);
+  //  post("linking %s successfull", (res?"was":"was NOT"));
 
   gst_object_unref (src);  
+
+  pdgst_element__connect_init(x);
 }
-
-static void pdgst_element__connect_init(t_pdgst_element*x) {
-  t_atom ap[2];
-  SETSYMBOL(ap+0, gensym("connect"));
-  SETSYMBOL(ap+1, x->x_gstname);
-
-  outlet_anything(x->x_gstout, s_gst, 2, ap);
-}
-
-
-
-
-
-
 
 gboolean pdgst_element__message_element_foreach(GQuark field_id, const GValue *value, gpointer x0)
 {
@@ -442,11 +463,63 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
     post("hmm, unknown message of type '%s'", GST_MESSAGE_TYPE_NAME(message));
     break;
   }
-
-
-
-
 }
+
+
+static void pdgst_element__padcb_added (GstElement *element, GstPad     *pad, t_pdgst_element*x)
+{
+  switch (gst_pad_get_direction(pad)) {
+ case GST_PAD_SRC: {
+    t_atom ap[2];
+    gchar*name=gst_pad_get_name(pad);
+    SETSYMBOL(ap+0, x->x_gstname);
+    SETSYMBOL(ap+1, gensym(name));
+    g_free(name);
+
+    pdgst_element__gstout_mess(x, gensym("connect"), 2, ap);  
+ }
+   break;
+  case GST_PAD_SINK:
+    break;
+  default:
+    pd_error(x, "[%s] added pad with unknown direction...");
+  }
+}
+static void pdgst_element__padcb_removed (GstElement *element, GstPad     *pad, t_pdgst_element*x)
+{
+  switch (gst_pad_get_direction(pad)) {
+ case GST_PAD_SRC: {
+  t_atom ap[2];
+  gchar*name=gst_pad_get_name(pad);
+  SETSYMBOL(ap+0, x->x_gstname);
+  SETSYMBOL(ap+1, gensym(name));
+  g_free(name);
+
+  pdgst_element__gstout_mess(x, gensym("disconnect"), 2, ap);  
+ }
+   break;
+  case GST_PAD_SINK:
+    break;
+  default:
+    pd_error(x, "[%s] removed pad with unknown direction...");
+  }
+}
+static void pdgst_element__padcb_nomore(GstElement *element, t_pdgst_element*x)
+{
+  //  post("[%s] no more pads", x->x_name->s_name);
+}
+
+static void pdgst_element__add_signals(t_pdgst_element*x) {
+  g_signal_connect (x->x_element, "pad-added", G_CALLBACK(pdgst_element__padcb_added), x);
+  g_signal_connect (x->x_element, "pad-removed", G_CALLBACK(pdgst_element__padcb_removed), x);
+  g_signal_connect (x->x_element, "no-more-pads", G_CALLBACK(pdgst_element__padcb_nomore), x);
+  //  LATER also remove signals(?)
+}
+
+
+
+
+
 
 static void pdgst_element__register(t_pdgst_element*x) {
  pdgst_bin_add((t_pdgst_elem*)x);
@@ -470,7 +543,12 @@ static void pdgst_element__gstMess(t_pdgst_element*x, t_symbol*s, int argc, t_at
   } else if(gensym("connect")==selector) {
     if(argc) {
       t_symbol*source=atom_getsymbol(argv);
-      pdgst_element__connect(x, source);
+      t_symbol*sourcepad=NULL;
+
+      if(argc>1)
+        sourcepad=atom_getsymbol(argv+1);
+
+      pdgst_element__connect(x, source, sourcepad);
     } else {
       pdgst_element__connect_init(x);
     }
@@ -504,6 +582,18 @@ static void pdgst_element__any(t_pdgst_element*x, t_symbol*s, int argc, t_atom*a
 }
 
 static void pdgst_element__free(t_pdgst_element*x) {
+  GstElement*lmn=x->x_element;
+  pd_unbind(&x->x_elem.l_obj.ob_pd, s_gst);
+
+  if(lmn->numsrcpads && lmn->numsinkpads) {
+    pd_unbind(&x->x_elem.l_obj.ob_pd, s_gst_filter);
+  } else if (lmn->numsrcpads) {
+    pd_unbind(&x->x_elem.l_obj.ob_pd, s_gst_source);
+  } else if (lmn->numsrcpads) {
+    pd_unbind(&x->x_elem.l_obj.ob_pd, s_gst_sink);
+  }  
+
+
   pdgst_element__deregister(x);
 
   if(x->x_element) {
@@ -518,9 +608,6 @@ static void pdgst_element__free(t_pdgst_element*x) {
 
   if(x->x_infout)
     outlet_free(x->x_infout);
-
-  pd_unbind(&x->x_elem.l_obj.ob_pd, s_gst);
-  
 }
 
 static void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
@@ -564,8 +651,19 @@ static void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   g_free (property_specs);
 
   pdgst_bin_add(&x->x_elem);
+  pdgst_element__add_signals(x);
 
   pd_bind(&x->x_elem.l_obj.ob_pd, s_gst);
+
+  if(lmn->numsrcpads && lmn->numsinkpads) {
+    pd_bind(&x->x_elem.l_obj.ob_pd, s_gst_filter);
+  } else if (lmn->numsrcpads) {
+    pd_bind(&x->x_elem.l_obj.ob_pd, s_gst_source);
+  } else if (lmn->numsrcpads) {
+    pd_bind(&x->x_elem.l_obj.ob_pd, s_gst_sink);
+  } else {
+    pd_error(x, "[%s]: hmm, element without pads", x->x_name->s_name);
+  }
   
   return x;
 }
@@ -578,8 +676,17 @@ int pdgst_element_setup_class(char*classname) {
 
   t_class*c=NULL;
 
-  if(!s_gst)
+  if(!s_gst) {
+    const char*s_gst_=pdgst_privatesymbol()->s_name;
+    char buf[MAXPDSTRING];
     s_gst=pdgst_privatesymbol();
+    snprintf(buf, MAXPDSTRING-1, "%s_source", s_gst_); buf[MAXPDSTRING-1]=0;
+    s_gst_source=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_filter", s_gst_); buf[MAXPDSTRING-1]=0;
+    s_gst_filter=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_sink", s_gst_); buf[MAXPDSTRING-1]=0;
+    s_gst_sink=gensym(buf);
+  }
 
   if(fac==NULL) {
     return 0;
