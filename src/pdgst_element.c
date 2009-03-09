@@ -6,6 +6,21 @@ static t_symbol*s_gst_source=NULL;
 static t_symbol*s_gst_filter=NULL;
 static t_symbol*s_gst_sink=NULL;
 
+typedef struct _pdgst_element
+{
+  t_pdgst_elem x_elem;
+
+  t_symbol*x_name;
+  t_symbol*x_gstname;
+
+  t_pdgst_property*x_props;
+
+  t_outlet*x_infout;
+  t_outlet*x_gstout;
+} t_pdgst_element;
+
+
+
 
 static void pdgst_element__gstout(t_pdgst_element*x, int argc, t_atom*argv)
 {

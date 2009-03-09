@@ -81,40 +81,31 @@ typedef struct _pdgst_elem
   t_method l_busCallback;
 } t_pdgst_elem;
 
-typedef struct _pdgst_element
-{
-  t_pdgst_elem x_elem;
-
-  t_symbol*x_name;
-  t_symbol*x_gstname;
-
-  t_pdgst_property*x_props;
-
-  t_outlet*x_infout;
-  t_outlet*x_gstout;
-} t_pdgst_element;
-
 
 /* from gvalue.c */
 t_atom*pdgst__gvalue2atom(const GValue*v, t_atom*a);
 GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v);
 
 
+/* from pdgst_element.c */
 void pdgst_element_setup(void);
 int pdgst_element_setup_class(char*classname);
 
+/* from pdgst_capsfilter.c */
 void pdgst_capsfilter_setup(void);
 int pdgst_capsfilter_setup_class(char*classname);
 
+/* from pdgst.c */
 t_symbol*pdgst_privatesymbol(void);
 void pdgst_bin_add(t_pdgst_elem*element);
 void pdgst_bin_remove(t_pdgst_elem*element);
 GstBin*pdgst_get_bin(t_pdgst_elem*element);
 
-
+/* from loop.c */
 void pdgst_loop_setup(void);
 
 
+/* from nowhere */
 static char *pdgst_version = "$Revision: 0.0 $";
 
 

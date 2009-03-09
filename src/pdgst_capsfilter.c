@@ -1,5 +1,5 @@
 #include "pdgst.h"
-#include <strings.h>
+#include <string.h>
 
 
 static t_symbol*s_gst=NULL;
@@ -26,9 +26,8 @@ static void pdgst_capsfilter_free(t_pdgst_capsfilter*x) {
 void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv);
 static void *pdgst_capsfilter_new(t_symbol*s, int argc, t_atom* argv) {
   t_pdgst_capsfilter*x=(t_pdgst_capsfilter*)pd_new(pdgst_capsfilter_class);
+  GstStructure *struc= gst_structure_empty_new(s->s_name);
   
-  x->x_caps=gst_caps_new_simple(s->s_name, NULL);
-
   while(argc--) {
     const char*cap=atom_getsymbol(argv++)->s_name;
 
@@ -37,6 +36,7 @@ static void *pdgst_capsfilter_new(t_symbol*s, int argc, t_atom* argv) {
     if(value) {
       int len=value-cap;
       char field[MAXPDSTRING];
+      t_binbuf*bb=binbuf_new();
     
       if(len>=MAXPDSTRING-1)
         len=MAXPDSTRING-2;
@@ -44,21 +44,25 @@ static void *pdgst_capsfilter_new(t_symbol*s, int argc, t_atom* argv) {
       value++;
       snprintf(field, len+1, "%s", cap);
 
-      gst_caps_set_simple(x->x_caps, field, G_TYPE_STRING, value);
-
-
-      //      post("'%s' setting: '%s'[%d]: '%s'", cap, field, len, value);
-
+      binbuf_text(bb, value, strlen(value));
+      if(binbuf_getnatom(bb)) {
+        t_atom*a=binbuf_getvec(bb);
+        GValue v={0, };
+        
+        if(pdgst__atom2gvalue(a, &v)) {
+          gst_structure_set_value (struc, field, &v);
+        } else {
+          post("couldn't convert '%s' to GValue", value);
+        }
+        g_value_unset(&v);
+      }
     } else {
       //      post("not setting: '%s'", cap);
-    }
-
-    
-    
+    }    
     //    gst_caps_set_simple(x->x_caps, 
-
   }
 
+  x->x_caps=gst_caps_new_full(struc, NULL);
 
   return x;
 }
@@ -91,6 +95,9 @@ int pdgst_capsfilter_setup_class(char*classname)
 
 void pdgst_capsfilter_setup(void)
 {
+  s_gst=pdgst_privatesymbol();
+
+
   pdgst_capsfilter_class=class_new(NULL, 
                                    (t_newmethod)pdgst_capsfilter_new,
                                    (t_method)pdgst_capsfilter_free,
@@ -98,5 +105,4 @@ void pdgst_capsfilter_setup(void)
                                    0 /* CLASS_NOINLET */,
                                    A_GIMME, 0);
   class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter_gstMess, s_gst, A_GIMME, 0);
-  s_gst=pdgst_privatesymbol();
 }

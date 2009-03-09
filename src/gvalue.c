@@ -79,16 +79,13 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
     v=(GValue*)getbytes(sizeof(GValue));
     memset(v, 0, sizeof(GValue));
   }
-
-  if( G_TYPE_NONE==G_VALUE_TYPE(v)) {
-    post("setting non-value to string/float");
+  if( G_TYPE_NONE==G_VALUE_TYPE(v) || G_TYPE_INVALID==G_VALUE_TYPE(v)) {
     if(A_SYMBOL==a->a_type) {
       g_value_init (v, G_TYPE_STRING);
     } else {
       g_value_init (v, G_TYPE_FLOAT);
     }
   }
-      
   switch (G_VALUE_TYPE (v)) {
   case G_TYPE_STRING:
     g_value_set_string(v, s->s_name);
