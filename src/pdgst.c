@@ -13,6 +13,9 @@
 # undef x_obj
 #endif
 
+
+//#define PDGST_CAPSFILTER
+
 static t_symbol*s_gst=NULL;
 static t_symbol*s_gst_source=NULL;
 static t_symbol*s_gst_filter=NULL;
@@ -272,9 +275,11 @@ static int pdgst_loader(t_canvas *canvas, char *classname)
   if(pdgst_element_setup_class(classname)) {
     return 1;
   }
+#ifdef PDGST_CAPSFILTER
   if(pdgst_capsfilter_setup_class(classname)) {
     return 1;
   }
+#endif
 
   /* fallback to not-our-business */
   return (0);
@@ -346,7 +351,9 @@ void pdgst_setup(void)
   class_addmethod  (pdgst_class, (t_method)pdgst__start, gensym("start"), 0);
   class_addmethod  (pdgst_class, (t_method)pdgst__stop, gensym("stop"), 0);
 
-  //  pdgst_capsfilter_setup();
+#ifdef PDGST_CAPSFILTER
+  pdgst_capsfilter_setup();
+#endif
 
   if(!s_gst) {
     const char*s_gst_=pdgst_privatesymbol()->s_name;

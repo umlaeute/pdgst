@@ -112,17 +112,27 @@ static t_atom*pdgst_gvalue2atom(const GValue*v, t_atom*a0)
         f=enum_value;
         SETFLOAT(a, f);
       } else {
-        success=0;
+        g_value_unset(&destval);
+        g_value_init (&destval, G_TYPE_STRING);
+        if(g_value_transform(v, &destval)) {
+          const gchar*str=g_value_get_string(&destval);
+          if(NULL==str)
+            s=&s_;
+          else
+            s=gensym(str);
+          SETSYMBOL(a, s);
+        } else 
+          success=0;
       }
     }
   }
-
   g_value_unset(&destval);
 
   if(success)
     return a;
 
-  freebytes(a, sizeof(t_atom));
+  if(a0!=a)
+    freebytes(a, sizeof(t_atom));
   return NULL;
 }
 
@@ -261,7 +271,6 @@ static void pdgst_element__connect(t_pdgst_element*x, t_symbol*s, t_symbol*spad)
     return;
   }
 
-
   if(spad)
     srcpad=spad->s_name;
 
@@ -274,7 +283,7 @@ static void pdgst_element__connect(t_pdgst_element*x, t_symbol*s, t_symbol*spad)
   pdgst_element__connect_init(x);
 }
 
-gboolean pdgst_element__message_element_foreach(GQuark field_id, const GValue *value, gpointer x0)
+static gboolean pdgst_element__message_element_foreach(GQuark field_id, const GValue *value, gpointer x0)
 {
   t_pdgst_element*x=(t_pdgst_element*)x0;
   post("element %x has value %x", field_id, value);
@@ -283,7 +292,25 @@ gboolean pdgst_element__message_element_foreach(GQuark field_id, const GValue *v
 }
 
 
+static void pdgst_element__taglist_foreach(const GstTagList *list, const gchar *tag, gpointer x0)
+{
+  t_pdgst_element*x=(t_pdgst_element*)x0;
+  int index=0;
+  const GValue*v=NULL;
+  while(v=gst_tag_list_get_value_index(list, tag, index)) {
+    t_atom ap[3];
 
+    SETSYMBOL(ap+0, gensym("tag"));
+    SETSYMBOL(ap+1, gensym(tag));
+
+    if(pdgst_gvalue2atom(v, ap+2)) {
+      pdgst_element__infoout(x, 3, ap);
+    } else {
+      pdgst_element__infoout(x, 2, ap);
+    }
+    index++;
+  }
+}
 
 
 
@@ -359,12 +386,9 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
     break;
 #endif /* gst-0.10.12 */
   case GST_MESSAGE_TAG: {
-#if 0
     GstTagList*tag_list;
     gst_message_parse_tag               (message, &tag_list);
-    /* LATER: call a help-function for each tag and output that 1-message-per-tag */
-#endif
-    CALLBACK_UNIMPLEMENTED(x) ;
+    gst_tag_list_foreach(tag_list, pdgst_element__taglist_foreach, x);
   }
     break;
 #if GST_CHECK_VERSION(0, 10, 11)
