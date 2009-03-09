@@ -320,6 +320,20 @@ static int pdgst_loader_init(void)
 }
 
 
+static char*s_locale=NULL;
+void pdgst_pushlocale(void)
+{
+  s_locale=setlocale(LC_NUMERIC, NULL);
+  setlocale(LC_NUMERIC, "C");
+}
+
+void pdgst_poplocale(void)
+{
+  setlocale(LC_NUMERIC, s_locale);
+  s_locale=NULL;
+}
+
+
 void pdgst_setup(void)
 {
   char*locale=NULL;
@@ -331,12 +345,10 @@ void pdgst_setup(void)
   post("\tcompiled on "__DATE__" at "__TIME__ " ");
   post("\tcompiled against Pd version %d.%d.%d.%s", PD_MAJOR_VERSION, PD_MINOR_VERSION, PD_BUGFIX_VERSION, PD_TEST_VERSION);
 
-
-  locale=setlocale(LC_NUMERIC, NULL);
-  setlocale(LC_NUMERIC, "C");
+  pdgst_pushlocale();
   err=pdgst_loader_init();
   if(err)pdgst_loop_setup();
-  setlocale(LC_NUMERIC, locale);
+  pdgst_poplocale();
   if(!err)return;
 
   sys_register_loader(pdgst_loader);

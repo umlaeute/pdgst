@@ -73,6 +73,7 @@ t_class*pdgst_addclass(t_symbol*s);
 
 typedef void (*pdgst_buscallback_fun_t)(t_object*x, GstMessage*msg);
 
+/* pdgst_elem.c */
 typedef struct _pdgst_elem
 {
   t_object l_obj;
@@ -94,24 +95,28 @@ void pdgst_elem__getParam(t_pdgst_elem*x, t_pdgst_property*prop);
 void pdgst_elem__free(t_pdgst_elem*x);
 void pdgst_elem__new (t_pdgst_elem*x, t_symbol*s);
 
-/* from gvalue.c */
+/* gvalue.c */
 t_atom*pdgst__gvalue2atom(const GValue*v, t_atom*a);
 GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v);
 
 
-/* from pdgst_element.c */
+/* pdgst_element.c */
 void pdgst_element_setup(void);
 int pdgst_element_setup_class(char*classname);
 
-/* from pdgst_capsfilter.c */
+/* pdgst_capsfilter.c */
 void pdgst_capsfilter_setup(void);
 int pdgst_capsfilter_setup_class(char*classname);
 
-/* from pdgst.c */
+/* pdgst.c */
 t_symbol*pdgst_privatesymbol(void);
 void pdgst_bin_add(t_pdgst_elem*element);
 void pdgst_bin_remove(t_pdgst_elem*element);
 GstBin*pdgst_get_bin(t_pdgst_elem*element);
+
+void pdgst_pushlocale(void);
+void pdgst_poplocale(void);
+ 
 
 /* from loop.c */
 void pdgst_loop_setup(void);

@@ -46,12 +46,14 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   t_pdgst_element*x=NULL;
   t_class*c=pdgst_findclass(s);
   if(!c)return NULL;
+  pdgst_pushlocale();
 
   x=(t_pdgst_element*)pd_new(c);
   pdgst_elem__new(&x->x_elem, s);
   lmn=x->x_element;
   if(NULL==lmn) {
     post("gst factory failed to create element...'%s'", s->s_name);
+    pdgst_poplocale();
     return NULL;
   }
 
@@ -63,6 +65,7 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   }
   g_free (property_specs);
 
+  pdgst_poplocale();
   return x;
 }
 
