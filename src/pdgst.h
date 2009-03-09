@@ -79,8 +79,20 @@ typedef struct _pdgst_elem
   t_canvas  *l_canvas;
   GstElement*l_element;
   t_method l_busCallback;
+
+  t_outlet*x_infout;
+  t_outlet*x_gstout;
+
+
+  t_symbol*x_name;
+  t_symbol*x_gstname;
 } t_pdgst_elem;
 
+void pdgst_elem__gstMess (t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv);
+void pdgst_elem__setParam(t_pdgst_elem*x, t_pdgst_property*prop, t_atom*ap);
+void pdgst_elem__getParam(t_pdgst_elem*x, t_pdgst_property*prop);
+void pdgst_elem__free(t_pdgst_elem*x);
+void pdgst_elem__new (t_pdgst_elem*x, t_symbol*s);
 
 /* from gvalue.c */
 t_atom*pdgst__gvalue2atom(const GValue*v, t_atom*a);
@@ -108,5 +120,10 @@ void pdgst_loop_setup(void);
 /* from nowhere */
 static char *pdgst_version = "$Revision: 0.0 $";
 
+
+extern t_symbol*s_pdgst__gst;
+extern t_symbol*s_pdgst__gst_source;
+extern t_symbol*s_pdgst__gst_filter;
+extern t_symbol*s_pdgst__gst_sink;
 
 #endif /* INCLUDE_PDGST_H__ */

@@ -2,8 +2,6 @@
 #include <string.h>
 
 
-static t_symbol*s_gst=NULL;
-
 static t_class*pdgst_capsfilter_class=NULL;
 typedef struct _pdgst_capsfilter
 {
@@ -95,14 +93,11 @@ int pdgst_capsfilter_setup_class(char*classname)
 
 void pdgst_capsfilter_setup(void)
 {
-  s_gst=pdgst_privatesymbol();
-
-
   pdgst_capsfilter_class=class_new(NULL, 
                                    (t_newmethod)pdgst_capsfilter_new,
                                    (t_method)pdgst_capsfilter_free,
                                    sizeof(t_pdgst_capsfilter),
                                    0 /* CLASS_NOINLET */,
                                    A_GIMME, 0);
-  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter_gstMess, s_gst, A_GIMME, 0);
+  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter_gstMess, s_pdgst__gst, A_GIMME, 0);
 }
