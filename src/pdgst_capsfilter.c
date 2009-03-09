@@ -1,4 +1,5 @@
 #include "pdgst.h"
+#include <strings.h>
 
 
 static t_symbol*s_gst=NULL;
@@ -7,6 +8,7 @@ static t_class*pdgst_capsfilter_class=NULL;
 typedef struct _pdgst_capsfilter
 {
   t_pdgst_elem x_elem;
+  GstCaps*x_caps;
 } t_pdgst_capsfilter;
 
 
@@ -21,8 +23,43 @@ static void pdgst_capsfilter_free(t_pdgst_capsfilter*x) {
 
 }
 
+void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv);
 static void *pdgst_capsfilter_new(t_symbol*s, int argc, t_atom* argv) {
   t_pdgst_capsfilter*x=(t_pdgst_capsfilter*)pd_new(pdgst_capsfilter_class);
+  
+  x->x_caps=gst_caps_new_simple(s->s_name, NULL);
+
+  while(argc--) {
+    const char*cap=atom_getsymbol(argv++)->s_name;
+
+    char*value=index(cap, '='); 
+
+    if(value) {
+      int len=value-cap;
+      char field[MAXPDSTRING];
+    
+      if(len>=MAXPDSTRING-1)
+        len=MAXPDSTRING-2;
+
+      value++;
+      snprintf(field, len+1, "%s", cap);
+
+      gst_caps_set_simple(x->x_caps, field, G_TYPE_STRING, value);
+
+
+      //      post("'%s' setting: '%s'[%d]: '%s'", cap, field, len, value);
+
+    } else {
+      //      post("not setting: '%s'", cap);
+    }
+
+    
+    
+    //    gst_caps_set_simple(x->x_caps, 
+
+  }
+
+
   return x;
 }
 
@@ -41,8 +78,11 @@ int pdgst_capsfilter_setup_class(char*classname)
   snprintf(dummypipeline, MAXPDSTRING-1, "fakesrc ! %s ! fakesink", classname);
   lmn=gst_parse_launch(dummypipeline, &gerror);
   if(lmn){
-    class_addcreator((t_newmethod)pdgst_capsfilter_new, gensym(classname), A_GIMME, 0);
     gst_object_unref (GST_OBJECT (lmn));
+
+    if(gerror)return 0;
+
+    class_addcreator((t_newmethod)pdgst_capsfilter_new, gensym(classname), A_GIMME, 0);
     return 1;
   } 
   return 0;

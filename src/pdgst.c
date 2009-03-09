@@ -14,7 +14,7 @@
 #endif
 
 
-//#define PDGST_CAPSFILTER
+#define PDGST_CAPSFILTER
 
 static t_symbol*s_gst=NULL;
 static t_symbol*s_gst_source=NULL;

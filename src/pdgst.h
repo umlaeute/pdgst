@@ -81,6 +81,24 @@ typedef struct _pdgst_elem
   t_method l_busCallback;
 } t_pdgst_elem;
 
+typedef struct _pdgst_element
+{
+  t_pdgst_elem x_elem;
+
+  t_symbol*x_name;
+  t_symbol*x_gstname;
+
+  t_pdgst_property*x_props;
+
+  t_outlet*x_infout;
+  t_outlet*x_gstout;
+} t_pdgst_element;
+
+
+/* from gvalue.c */
+t_atom*pdgst__gvalue2atom(const GValue*v, t_atom*a);
+GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v);
+
 
 void pdgst_element_setup(void);
 int pdgst_element_setup_class(char*classname);
