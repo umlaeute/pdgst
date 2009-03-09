@@ -339,6 +339,17 @@ void pdgst_setup(void)
   char*locale=NULL;
   int err=0;
 
+  if(!s_pdgst__gst) {
+    const char*_gst_="__gst";
+    char buf[MAXPDSTRING];
+    s_pdgst__gst=gensym(_gst_);;
+    snprintf(buf, MAXPDSTRING-1, "%s_source", _gst_); buf[MAXPDSTRING-1]=0;
+    s_pdgst__gst_source=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_filter", _gst_); buf[MAXPDSTRING-1]=0;
+    s_pdgst__gst_filter=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_sink", _gst_); buf[MAXPDSTRING-1]=0;
+    s_pdgst__gst_sink=gensym(buf);
+  }
 
   post("pdgst %s",pdgst_version);  
   post("\t(copyleft) IOhannes m zmoelnig @ IEM / KUG");
@@ -368,18 +379,6 @@ void pdgst_setup(void)
 #ifdef PDGST_CAPSFILTER
   pdgst_capsfilter_setup();
 #endif
-
-  if(!s_pdgst__gst) {
-    const char*_gst_="__gst";
-    char buf[MAXPDSTRING];
-    s_pdgst__gst=gensym(_gst_);;
-    snprintf(buf, MAXPDSTRING-1, "%s_source", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_source=gensym(buf);
-    snprintf(buf, MAXPDSTRING-1, "%s_filter", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_filter=gensym(buf);
-    snprintf(buf, MAXPDSTRING-1, "%s_sink", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_sink=gensym(buf);
-  }
 
 }
 
