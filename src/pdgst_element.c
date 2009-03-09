@@ -144,13 +144,19 @@ static void pdgst_setparam(t_pdgst_element*x, t_pdgst_property*prop, t_atom*ap)
 }
 
 static void pdgst_element__connect(t_pdgst_element*x, t_symbol*s) {
+  gboolean res=FALSE;
   //  post("need to connect %s to %s",  s->s_name, x->x_gstname->s_name);
   GstBin*bin=pdgst_get_bin(&x->x_elem);
 
   GstElement*src = gst_bin_get_by_name (bin, s->s_name);
-  if(!src)return;
+  if(!src) {
+    post("couldn't find element '%s'", s->s_name);
+    return;
+  }
 
-  gst_element_link(src,x->x_element);
+  post("linking '%s' to '%s'", s->s_name, x->x_gstname->s_name);
+  res=gst_element_link_many(src, x->x_element, NULL);
+  post("linking %s successfull", (res?"was":"was NOT"));
 
   gst_object_unref (src);  
 }

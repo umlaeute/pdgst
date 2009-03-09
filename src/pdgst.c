@@ -111,6 +111,12 @@ static void pdgst__rebuild(t_pdgst*x) {
 static void pdgst__start(t_pdgst*x) 
 {
   gst_element_set_state (x->x_pipeline, GST_STATE_PLAYING);
+
+
+  /* 
+   * for testing:: write to XML
+   */
+  //  gst_xml_write_file (GST_ELEMENT (x->x_pipeline), fopen ("xmlTest.gst", "w"));
 }
 
 static void pdgst__stop(t_pdgst*x) {
