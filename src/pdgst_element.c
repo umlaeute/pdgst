@@ -126,6 +126,85 @@ static t_atom*pdgst_gvalue2atom(const GValue*v, t_atom*a0)
   return NULL;
 }
 
+static GValue*pdgst_atom2gvalue(t_atom*a, GValue*v0)
+{
+  GValue*v=v0;
+  t_symbol*s=atom_getsymbol(a);
+  t_float  f=atom_getfloat(a);
+  t_int    i=atom_getint(a);
+
+  if(NULL==v) {
+    v=(GValue*)getbytes(sizeof(GValue));
+    memset(v, 0, sizeof(GValue));
+  }
+
+  if( G_TYPE_NONE==G_VALUE_TYPE(v)) {
+    post("setting non-value to string/float");
+    if(A_SYMBOL==a->a_type) {
+      g_value_init (v, G_TYPE_STRING);
+    } else {
+      g_value_init (v, G_TYPE_FLOAT);
+    }
+  }
+      
+  switch (G_VALUE_TYPE (v)) {
+  case G_TYPE_STRING:
+    g_value_set_string(v, s->s_name);
+    break;
+  case G_TYPE_BOOLEAN:
+    g_value_set_boolean(v, i);
+    break;
+  case G_TYPE_ENUM:
+    g_value_set_enum(v, i);
+    break;
+  case G_TYPE_CHAR: 
+    g_value_set_char(v, i);
+    break;
+  case G_TYPE_UCHAR: 
+    g_value_set_uchar(v, i);
+    break;
+  case G_TYPE_INT:
+    g_value_set_int(v, i);
+    break;
+  case G_TYPE_UINT: 
+    g_value_set_uint(v, i);
+    break;
+  case G_TYPE_LONG: 
+    g_value_set_long(v, i);
+    break;
+  case G_TYPE_ULONG: 
+    g_value_set_ulong(v, i);
+    break;
+  case G_TYPE_INT64: 
+    g_value_set_int64(v, i);
+    break;
+  case G_TYPE_UINT64: 
+    g_value_set_uint64(v, i);
+    break;
+  case G_TYPE_FLOAT:
+    g_value_set_float(v, f);
+    break;
+  case G_TYPE_DOUBLE:
+    g_value_set_double(v, f);
+    break;
+  case G_TYPE_INTERFACE:
+  case G_TYPE_INVALID:
+  case G_TYPE_NONE:
+  case G_TYPE_FLAGS:
+  case G_TYPE_POINTER:
+  case G_TYPE_BOXED:
+  case G_TYPE_PARAM:
+  case G_TYPE_OBJECT:
+  default:
+    if(v!=v0) {
+      freebytes((void*)v0, sizeof(GValue));
+    }
+    return NULL;
+    break;
+  }
+  return v;
+}
+
 
 /* should be "static t_atom*" */
 static void pdgst_getparam(t_pdgst_element*x, t_pdgst_property*prop)
@@ -151,17 +230,16 @@ static void pdgst_getparam(t_pdgst_element*x, t_pdgst_property*prop)
 static void pdgst_setparam(t_pdgst_element*x, t_pdgst_property*prop, t_atom*ap)
 {
     GstElement*element=x->x_element;
-    pd_error(x, "setting parameters not yet implemented...");
-    return;
-
-    switch(ap->a_type) {
-    case A_FLOAT:
-      g_object_set (G_OBJECT (element), prop->name->s_name, atom_getfloat(ap), NULL);
-      break;
-    case A_SYMBOL: default:
-      g_object_set (G_OBJECT (element), prop->name->s_name, atom_getsymbol(ap)->s_name, NULL);
-      break;
+    GValue v = { 0, };
+    g_value_init (&v, prop->type);
+    if(pdgst_atom2gvalue(ap, &v)) {
+      g_object_set_property(G_OBJECT (element), prop->name->s_name, &v);
+    } else {
+      pd_error(x, "hmm, couldn't create GValue from atom");
     }
+
+    //    pd_error(x, "setting parameters not yet implemented...");
+    return;
 }
 
 static void pdgst_element__connect_init(t_pdgst_element*x) {
@@ -235,7 +313,7 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
     SETFLOAT(ap+1, err->code);
 
     pd_error (x, "[%s]: %s", x->x_name->s_name, err->message);
-    pd_error (x, "[%s]: %s", debug);
+    pd_error (x, "[%s]: %s", x->x_name->s_name, debug);
     g_error_free (err);
     g_free (debug);
 
@@ -254,7 +332,7 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
     SETFLOAT(ap+1, err->code);
 
     error ("[%s]: %s", x->x_name->s_name, err->message);
-    error ("[%s]: %s", debug);
+    error ("[%s]: %s", x->x_name->s_name, debug);
     g_error_free (err);
     g_free (debug);
 
@@ -272,7 +350,7 @@ static void pdgst_element__bus_callback(t_pdgst_element*x, GstMessage*message) {
     SETFLOAT(ap+1, err->code);
 
     post ("[%s]: %s", x->x_name->s_name, err->message);
-    post ("[%s]: %s", debug);
+    post ("[%s]: %s", x->x_name->s_name, debug);
     g_error_free (err);
     g_free (debug);
 
@@ -574,6 +652,8 @@ static void pdgst_element__any(t_pdgst_element*x, t_symbol*s, int argc, t_atom*a
     t_pdgst_property*prop=pdgst_getproperty(x->x_props, s);
     if(prop && prop->flags & G_PARAM_WRITABLE) {
       pdgst_setparam(x, prop, argv);
+      if(prop->flags & G_PARAM_READABLE)
+        pdgst_getparam(x, prop);
     } else {
       pd_error(x, "[%s] no set method for '%s'", x->x_name->s_name, s->s_name);
       return;
@@ -655,11 +735,11 @@ static void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
 
   pd_bind(&x->x_elem.l_obj.ob_pd, s_gst);
 
-  if(lmn->numsrcpads && lmn->numsinkpads) {
+  if((lmn->numsrcpads > 0) && (lmn->numsinkpads > 0)) {
     pd_bind(&x->x_elem.l_obj.ob_pd, s_gst_filter);
-  } else if (lmn->numsrcpads) {
+  } else if (lmn->numsrcpads > 0) {
     pd_bind(&x->x_elem.l_obj.ob_pd, s_gst_source);
-  } else if (lmn->numsrcpads) {
+  } else if (lmn->numsinkpads > 0) {
     pd_bind(&x->x_elem.l_obj.ob_pd, s_gst_sink);
   } else {
     pd_error(x, "[%s]: hmm, element without pads", x->x_name->s_name);
