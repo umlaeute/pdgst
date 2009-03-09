@@ -86,6 +86,7 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
       g_value_init (v, G_TYPE_FLOAT);
     }
   }
+
   switch (G_VALUE_TYPE (v)) {
   case G_TYPE_STRING:
     g_value_set_string(v, s->s_name);
@@ -135,6 +136,15 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
   case G_TYPE_PARAM:
   case G_TYPE_OBJECT:
   default:
+    if(G_VALUE_HOLDS(v, G_TYPE_ENUM)) {
+      /* an enum */
+      /* LATER: check symbolic values */
+      g_value_set_enum(v, i);
+      break;
+    } else {
+      /* no enum class */
+    }
+
     if(v!=v0) {
       freebytes((void*)v0, sizeof(GValue));
     }

@@ -13,19 +13,31 @@ typedef struct _pdgst_capsfilter
 /* ================================================================== */
 /* capsfilter, e.g. [audio/x-raw-float channels=10] */
 
-static void pdgst_capsfilter_gstMess(t_pdgst_capsfilter*x, t_symbol*s, int argc, t_atom*argv) {
+
+static void pdgst_capsfilter__bang(t_pdgst_capsfilter*x) {
+  GValue value = { 0, };
+  gchar *caps_str=NULL;
+  g_value_init (&value, GST_TYPE_CAPS);
+  g_object_get_property(G_OBJECT (x->x_element), "caps", &value); 
+  caps_str= gst_caps_to_string ( gst_value_get_caps ( &value));
+  post("caps: %s", caps_str);
+  g_free (caps_str);
 
 }
 
-static void pdgst_capsfilter_free(t_pdgst_capsfilter*x) {
-
+static void pdgst_capsfilter__free(t_pdgst_capsfilter*x) {
+  pdgst_elem__free(&x->x_elem);
 }
 
-void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv);
-static void *pdgst_capsfilter_new(t_symbol*s, int argc, t_atom* argv) {
+static void *pdgst_capsfilter__new(t_symbol*s, int argc, t_atom* argv) {
   t_pdgst_capsfilter*x=(t_pdgst_capsfilter*)pd_new(pdgst_capsfilter_class);
   GstStructure *struc= gst_structure_empty_new(s->s_name);
-  
+
+  pdgst_elem__new(&x->x_elem, gensym("capsfilter"));
+  if(NULL==x->x_element) {
+    return NULL;
+  }
+
   while(argc--) {
     const char*cap=atom_getsymbol(argv++)->s_name;
 
@@ -61,6 +73,12 @@ static void *pdgst_capsfilter_new(t_symbol*s, int argc, t_atom* argv) {
   }
 
   x->x_caps=gst_caps_new_full(struc, NULL);
+  if(x->x_caps) {
+    GValue v={0, };
+    g_value_init (&v, GST_TYPE_CAPS);
+    gst_value_set_caps(&v, x->x_caps);
+    g_object_set_property(G_OBJECT (x->x_element), "caps", &v);
+  }
 
   return x;
 }
@@ -84,7 +102,7 @@ int pdgst_capsfilter_setup_class(char*classname)
 
     if(gerror)return 0;
 
-    class_addcreator((t_newmethod)pdgst_capsfilter_new, gensym(classname), A_GIMME, 0);
+    class_addcreator((t_newmethod)pdgst_capsfilter__new, gensym(classname), A_GIMME, 0);
     return 1;
   } 
   return 0;
@@ -93,11 +111,12 @@ int pdgst_capsfilter_setup_class(char*classname)
 
 void pdgst_capsfilter_setup(void)
 {
-  pdgst_capsfilter_class=class_new(NULL, 
-                                   (t_newmethod)pdgst_capsfilter_new,
-                                   (t_method)pdgst_capsfilter_free,
+  pdgst_capsfilter_class=class_new(gensym("pdgst-capsfilter"), /* ouch NULL is not a good classname; Pd will crash on generating error messages */
+                                   (t_newmethod)pdgst_capsfilter__new,
+                                   (t_method)pdgst_capsfilter__free,
                                    sizeof(t_pdgst_capsfilter),
                                    0 /* CLASS_NOINLET */,
                                    A_GIMME, 0);
-  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter_gstMess, s_pdgst__gst, A_GIMME, 0);
+  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_elem__gstMess, s_pdgst__gst, A_GIMME, 0);
+  class_addbang  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter__bang);
 }
