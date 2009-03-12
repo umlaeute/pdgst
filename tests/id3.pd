@@ -1,0 +1,28 @@
+#N canvas 1394 191 897 643 10;
+#X obj 38 75 pdgst;
+#X msg 43 45 bang;
+#X msg 131 38 start;
+#X msg 128 72 stop;
+#X obj 86 97 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0 1
+;
+#X msg 227 77 __gst connect;
+#X obj 151 113 filesrc;
+#X obj 151 183 id3demux;
+#X obj 151 253 fakesink;
+#X msg 281 124 location /tmp/zexy.mp3;
+#X msg 302 96 location;
+#X obj 162 146 infoprint 0;
+#X obj 162 216 infoprint 1;
+#X obj 161 285 infoprint 2;
+#X connect 1 0 0 0;
+#X connect 2 0 0 0;
+#X connect 3 0 0 0;
+#X connect 4 0 0 0;
+#X connect 5 0 6 0;
+#X connect 6 0 11 0;
+#X connect 7 0 12 0;
+#X connect 8 0 13 0;
+#X connect 9 0 6 0;
+#X connect 10 0 6 0;
+#X connect 11 0 7 0;
+#X connect 12 0 8 0;
