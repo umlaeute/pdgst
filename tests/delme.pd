@@ -17,7 +17,7 @@
 #X obj 151 585 route info;
 #X obj 151 253 dvdec;
 #X obj 151 333 ffmpegcolorspace;
-#X obj 151 563 glimagesink sync=false;
+#X obj 151 563 autovideosink sync=false;
 #X obj 151 297 print INFO:2;
 #X obj 151 377 print INFO:3;
 #X obj 151 607 print INFO:4;

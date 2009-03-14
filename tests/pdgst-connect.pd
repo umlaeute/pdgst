@@ -11,7 +11,7 @@
 #X obj 162 323 print INFO:v;
 #X obj 255 418 route info;
 #X obj 245 456 print INFO:g;
-#X obj 257 391 glimagesink;
+#X obj 257 391 autovideosink;
 #X connect 1 0 0 0;
 #X connect 2 0 0 0;
 #X connect 3 0 0 0;

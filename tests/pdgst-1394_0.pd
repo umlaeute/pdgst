@@ -9,7 +9,7 @@
 #X obj 62 190 dv1394src;
 #X obj 62 330 dvdec;
 #X obj 62 410 ffmpegcolorspace;
-#X obj 62 488 glimagesink sync=false;
+#X obj 62 488 autovideosink sync=false;
 #X obj 62 217 infoprint 0;
 #X obj 62 283 infoprint 1;
 #X obj 62 352 infoprint 2;
