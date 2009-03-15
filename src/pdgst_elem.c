@@ -57,13 +57,21 @@ static void pdgst_elem__register(t_pdgst_elem*x) {
 static void pdgst_elem__deregister(t_pdgst_elem*x) {
   pdgst_bin_remove((t_pdgst_elem*)x);
 }
-
+static void pdgst_elem__infoout_mess(t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv);
 void pdgst_elem__gstMess(t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv) {
   t_symbol*selector=NULL;
   if(!argc || !(A_SYMBOL==argv->a_type))
     return;
   selector=atom_getsymbol(argv);
   argv++; argc--;
+  if(gensym("state")==selector) {
+    t_atom ap[2];
+    GstState state, pending;
+    gst_element_get_state (x->l_element, &state,&pending,GST_CLOCK_TIME_NONE );
+    SETFLOAT(ap+0, (t_float)state);
+    SETFLOAT(ap+1, (t_float)pending);
+    pdgst_elem__infoout_mess(x, gensym("state"), 2, ap);
+  } else 
   if(gensym("register")==selector) {
     pdgst_elem__register(x);
   } else if(gensym("deregister")==selector) {
@@ -421,7 +429,6 @@ static void pdgst_elem__bus_callback(t_pdgst_elem*x, GstMessage*message) {
     break;
   }
 }
-
 
 static void pdgst_elem__padcb_added (GstElement *element, GstPad     *pad, t_pdgst_elem*x)
 {
