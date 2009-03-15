@@ -95,9 +95,8 @@ void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_elem*x) {
     // hmm, this is a message originating from somebody else
     // how should we do that?
     // LATER make x aware that this is from somebody else...
-    // OR output this in the pdgst object
+    // OR shall we output this in the pdgst object??
     if(src==s_pipeline) {
-      //      startpost("..");
       (*(t_gotfn)(*cb))(x, msg);
     }
 
