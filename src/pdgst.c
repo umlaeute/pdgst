@@ -34,6 +34,21 @@ typedef struct _pdgst
   GstElement*x_pipeline;
 } t_pdgst;
 
+static void pdgst_elem__infoout(t_pdgst_elem*x, int argc, t_atom*argv)
+{
+  if(argc) {
+    if(A_SYMBOL==argv->a_type) {
+      outlet_anything(x->x_infout, atom_getsymbol(argv), argc-1, argv+1);
+    } else {
+      outlet_list(x->x_infout, 0, argc, argv);
+    }
+  } else {
+    outlet_bang(x->x_infout);
+  }
+}
+
+
+
 static void pdgst__send_(t_symbol*s, int argc, t_atom*argv)
 {
   if(s->s_thing)typedmess(s->s_thing, s_pdgst__gst, argc, argv);
@@ -55,6 +70,8 @@ static void pdgst__send_symbol(t_symbol*s)
 void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_elem*x) {
   t_method cb=x->l_busCallback;
   GstElement*src=NULL;
+
+
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
     src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
 
@@ -63,8 +80,27 @@ void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_elem*x) {
     return;
   }
 
+  if(0) {
+    gchar *name0=NULL, *name1=NULL;
+    g_object_get (G_OBJECT (src), "name", &name0, NULL);
+    g_object_get (G_OBJECT (x->l_element), "name", &name1, NULL);
+    //    post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
+    g_free (name0);
+    g_free (name1);
+  }
+
   if(src==x->l_element) {
     (*(t_gotfn)(*cb))(x, msg);
+  } else {
+    // hmm, this is a message originating from somebody else
+    // how should we do that?
+    // LATER make x aware that this is from somebody else...
+    // OR output this in the pdgst object
+    if(src==s_pipeline) {
+      //      startpost("..");
+      (*(t_gotfn)(*cb))(x, msg);
+    }
+
   }
 
 }
