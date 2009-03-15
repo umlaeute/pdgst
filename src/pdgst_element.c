@@ -33,6 +33,22 @@ static void pdgst_element__any(t_pdgst_element*x, t_symbol*s, int argc, t_atom*a
   }
 }
 
+static void pdgst_element__seek (t_pdgst_element*x, t_float time)
+{
+  GstElement *element=x->x_element;
+  guint64     time_ns=time*1e6;;
+  GstEvent *event;
+
+  event = gst_event_new_seek (1.0, 
+			      GST_FORMAT_TIME,
+			      GST_SEEK_FLAG_NONE,
+			      GST_SEEK_TYPE_SET, time_ns,
+			      GST_SEEK_TYPE_NONE, G_GUINT64_CONSTANT (0));
+  post("seeking element %s to %f", x->x_elem.x_gstname->s_name, time);
+  gst_element_send_event (element, event);
+}
+
+
 static void pdgst_element__free(t_pdgst_element*x) {
   pdgst_elem__free(&x->x_elem);
 }
@@ -88,6 +104,8 @@ int pdgst_element_setup_class(char*classname) {
 
   c=pdgst_addclass(gensym(classname));
   class_addmethod  (c, (t_method)pdgst_elem__gstMess, s_pdgst__gst, A_GIMME, 0);
+
+  class_addmethod  (c, (t_method)pdgst_element__seek, gensym("_seek"), A_FLOAT, 0);
 
   property_specs = g_object_class_list_properties(G_OBJECT_GET_CLASS (lmn), &num_properties);
   for (i = 0; i < num_properties; i++) {
