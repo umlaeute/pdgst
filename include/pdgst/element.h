@@ -1,4 +1,30 @@
 
+/* ****************************************************** */
+/* the Pd GST external - GStreamer bindings for Pure data */
+/******************************************************** */
+/*
+ * copyleft (c) 2009 IOhannes m zmölnig
+ *
+ *   forum::für::umläute
+ *
+ *   institute of electronic music and acoustics (iem)
+ *   university of music and performing arts
+ *
+ *
+ ********************************************************
+ *
+ * license: GNU General Public License v.2 or later
+ *
+ ********************************************************/
+
+/* all objectclasses are of pdgst_elem
+ *
+ * child classes:
+ *   pdgst_element: objectclass for a normal gstreamer-element
+ *   pdgst_capsfilter: objectclass for a gstreamer-capsfilter
+ */
+
+
 /* pdgst_elem.c */
 typedef struct _pdgst_elem
 {
@@ -25,6 +51,12 @@ void pdgst_elem__new (t_pdgst_elem*x, t_symbol*s);
 /* pdgst_element.c */
 void pdgst_element_setup(void);
 int pdgst_element_setup_class(char*classname);
+
+/* pdgst_capsfilter.c */
+void pdgst_capsfilter_setup(void);
+int pdgst_capsfilter_setup_class(char*classname);
+
+
 
 
 

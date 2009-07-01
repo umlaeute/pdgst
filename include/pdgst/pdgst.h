@@ -76,10 +76,6 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v);
 
 #include "pdgst/element.h"
 
-/* pdgst_capsfilter.c */
-void pdgst_capsfilter_setup(void);
-int pdgst_capsfilter_setup_class(char*classname);
-
 /* pdgst.c */
 t_symbol*pdgst_privatesymbol(void);
 void pdgst_bin_add(t_pdgst_elem*element);
