@@ -15,6 +15,15 @@
  *
  ******************************************************/
 
+/* pdgst_capsfilter.c
+ *    objectclass for capsfilter-elements
+ *
+ * derived from pdgst_elem
+ *
+ * doesn't work yet
+ */
+
+
 #warning add docs
 
 #include "pdgst/pdgst.h"
@@ -109,12 +118,16 @@ int pdgst_capsfilter_setup_class(char*classname)
   GError*gerror=NULL;
 
   char dummypipeline[MAXPDSTRING];
+
+  return 0;
+
   /* could be a capsfilter:
    * "capsfilter caps=audio/x-raw-float" == "audio/x-raw-float"
    */
-  //    lmn=gst_parse_launch(classname, &gerror);
 
-  snprintf(dummypipeline, MAXPDSTRING-1, "fakesrc ! %s ! fakesink", classname);
+  /* this is always true, so not such a good idea... */
+  snprintf(dummypipeline, MAXPDSTRING-1, "fakesrc ! capsfilter caps=%s ! fakesink", classname);
+
   lmn=gst_parse_launch(dummypipeline, &gerror);
   if(lmn){
     gst_object_unref (GST_OBJECT (lmn)); /* since we own lmn created by gst_parse_launch */
@@ -130,7 +143,7 @@ int pdgst_capsfilter_setup_class(char*classname)
 
 void pdgst_capsfilter_setup(void)
 {
-  pdgst_capsfilter_class=class_new(gensym("pdgst-capsfilter"), /* ouch NULL is not a good classname; Pd will crash on generating error messages */
+  pdgst_capsfilter_class=class_new(gensym("pdgst-capsfilter"), /* NULL is not a good classname; Pd will crash on generating error messages */
                                    (t_newmethod)pdgst_capsfilter__new,
                                    (t_method)pdgst_capsfilter__free,
                                    sizeof(t_pdgst_capsfilter),

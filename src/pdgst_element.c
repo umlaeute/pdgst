@@ -15,8 +15,12 @@
  *
  ******************************************************/
 
-#warning add docs
 
+/* pdgst_element.c
+ *    objectclass for gstreamer-elements
+ *
+ * derived from pdgst_elem
+ */
 
 
 #include "pdgst/pdgst.h"
