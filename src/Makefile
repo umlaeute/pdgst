@@ -2,6 +2,8 @@ EXT?=pd_linux
 CC?=gcc 
 PDSRC?=../../../pd/src
 
+vpath %.h ../include/pdgst
+
 current: $(EXT)
 
 NAME=pdgst
@@ -16,7 +18,7 @@ GST_LDFLAGS=$(shell pkg-config --libs gstreamer-0.10)
 .SUFFIXES: .$(EXT)
 
 LINUXCFLAGS = -g -O2 -fPIC -DPD $(GST_CFLAGS) $(CFLAGS)
-LINUXINCLUDE =  -I$(PDSRC)
+LINUXINCLUDE =  -I$(PDSRC) -I../include
 LINUXLDFLAGS = -lc -lm  $(GST_LDFLAGS)
 
 $(EXT): $(NAME).$(EXT)

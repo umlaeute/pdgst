@@ -1,0 +1,24 @@
+pdgst.c
+        main control object [pdgst]
+        initializes the pdgst-loader
+
+
+pdgst_element.c
+        base object for normal elements like "fakesink"
+        
+
+pdgst_capsfilter.c
+        base object for "capsfilter" elements like "audio/x-raw-float"
+        the loader-part will try to instantiate a pipeline "fakesrc | <name> | fakesink" and if this works, the object will be taken into account
+
+pdgst_elem.c
+
+
+
+gvalue.c  
+loop.c
+
+
+properties.c
+        infrastructure to easily access the properties of an element/objectclass by it's name
+        basically a named list of all properties is created at instantiation time

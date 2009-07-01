@@ -1,4 +1,23 @@
-#include "pdgst.h"
+/******************************************************
+ *
+ * pdgst - implementation file
+ *
+ * copyleft (c) 2009 IOhannes m zmölnig
+ *
+ *   forum::für::umläute
+ *
+ *   institute of electronic music and acoustics (iem)
+ *   university of music and performing arts
+ *
+ ******************************************************
+ *
+ * license: GNU General Public License v.2 or later
+ *
+ ******************************************************/
+
+#warning add docs
+
+#include "pdgst/pdgst.h"
 
 
 #include "s_stuff.h"
@@ -71,6 +90,11 @@ void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_elem*x) {
   t_method cb=x->l_busCallback;
   GstElement*src=NULL;
 
+  if(NULL==cb) {
+    verbose(0, "no bus callback available");
+    return;
+  }
+
 
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
     src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
@@ -117,16 +141,23 @@ void pdgst_bin_add(t_pdgst_elem*element)
   /* LATER: do not ignore canvas within the element structure0 */
   GstElement*gele=pdgst__getcontainer(element);
   GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
-
   gst_bin_add(GST_BIN(gele), element->l_element);
   g_signal_connect (bus, "message", G_CALLBACK(pdgst__element_buscallback), element);
-  gst_object_unref (bus);
+  gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 }
 
 void pdgst_bin_remove(t_pdgst_elem*element)
 {
+  GstState state, pending;
   GstElement*gele=pdgst__getcontainer(element);
-  gst_bin_remove(GST_BIN(gele), element->l_element);
+
+  if(element->l_element) {
+    gst_element_set_state (element->l_element, GST_STATE_NULL);
+    if(gst_bin_remove(GST_BIN(gele), element->l_element)) {
+      element->l_element=NULL;
+    }
+  }
+
 }
 
 GstBin*pdgst_get_bin(t_pdgst_elem*element)
@@ -144,7 +175,7 @@ GstBin*pdgst_get_bin(t_pdgst_elem*element)
 /* "real" pdgst object for meta-control */
 
 static void pdgst__gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
-  post("_gst: %s", s->s_name);
+  post("ignoring message:: __gst: %s", s->s_name);
 }
 
 /* rebuild the gst-graph */
@@ -189,7 +220,7 @@ static gboolean pdgst__bus_callback (GstBus     *bus,
                                     gpointer    data)
 {
   t_pdgst*x=(t_pdgst*)data;
-  //  post("hey %x, got message '%s'", x, GST_MESSAGE_TYPE_NAME (message));
+  // post("bus %x, got message '%s'", x, GST_MESSAGE_TYPE_NAME (message));
 
   GstElement*src=NULL;
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(message)))
@@ -293,10 +324,8 @@ static void *pdgst__new(t_symbol*s, int argc, t_atom* argv) {
   /* set up the bus watch */
   bus = gst_pipeline_get_bus (GST_PIPELINE (x->x_pipeline));
   //gst_bus_add_watch (bus, pdgst__bus_callback, x);
-
   gst_bus_add_signal_watch (bus);
-
-  gst_object_unref (bus);
+  gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 
   return x;
 }

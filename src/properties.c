@@ -1,5 +1,35 @@
+/******************************************************
+ *
+ * pdgst - implementation file
+ *
+ * copyleft (c) 2009 IOhannes m zmölnig
+ *
+ *   forum::für::umläute
+ *
+ *   institute of electronic music and acoustics (iem)
+ *   university of music and performing arts
+ *
+ ******************************************************
+ *
+ * license: GNU General Public License v.2 or later
+ *
+ ******************************************************/
 
-#include "pdgst.h"
+
+/* properties.c
+ *      infrastructure to easily access a given property of an element by it's name
+ *
+ * pdgst_addproperty()
+ *  a named list of all properties of an element is created at instantiation time (of the according object)
+ * pdgst_getproperty()
+ *  the property given by name is returned
+ * pdgst_killproperties()
+ *  the list of properties is freed
+ */
+
+
+
+#include "pdgst/pdgst.h"
 
 t_pdgst_property*pdgst_addproperty(t_pdgst_property*props, GParamSpec*param)
 {

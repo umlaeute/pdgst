@@ -1,4 +1,23 @@
-#include "pdgst.h"
+/******************************************************
+ *
+ * pdgst - implementation file
+ *
+ * copyleft (c) 2009 IOhannes m zmölnig
+ *
+ *   forum::für::umläute
+ *
+ *   institute of electronic music and acoustics (iem)
+ *   university of music and performing arts
+ *
+ ******************************************************
+ *
+ * license: GNU General Public License v.2 or later
+ *
+ ******************************************************/
+
+#warning add docs
+
+#include "pdgst/pdgst.h"
 
 static t_clock*s_clock=NULL;
 

@@ -1,9 +1,34 @@
-#include "pdgst.h"
+/******************************************************
+ *
+ * pdgst - implementation file
+ *
+ * copyleft (c) 2009 IOhannes m zmölnig
+ *
+ *   forum::für::umläute
+ *
+ *   institute of electronic music and acoustics (iem)
+ *   university of music and performing arts
+ *
+ ******************************************************
+ *
+ * license: GNU General Public License v.2 or later
+ *
+ ******************************************************/
+
+#warning add docs
+
+#include "pdgst/pdgst.h"
 #include <string.h>
 
 static void pdgst_elem__gstout(t_pdgst_elem*x, int argc, t_atom*argv)
 {
-  outlet_anything(x->x_gstout, s_pdgst__gst, argc, argv);
+  if(x&&x->x_gstout) {
+    outlet_anything(x->x_gstout, s_pdgst__gst, argc, argv);
+  } else {
+    verbose(0, "no gstout found for %x", x);
+    postatom(argc, argv);
+    endpost();
+  }
 }
 static void pdgst_elem__gstout_mess(t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv)
 {
@@ -41,11 +66,9 @@ static void pdgst_elem__connect(t_pdgst_elem*x, t_symbol*s, t_symbol*spad) {
   if(spad)
     srcpad=spad->s_name;
 
-  //  post("linking '%s' to '%s'", s->s_name, x->x_gstname->s_name);
   res=gst_element_link_pads(src, NULL, x->l_element, NULL);
-  //  post("linking %s successfull", (res?"was":"was NOT"));
 
-  gst_object_unref (src);  
+  gst_object_unref (src);  /* since we own src returned by gst_bin_get_by_name() */
 
   pdgst_elem__connect_init(x);
 }
@@ -57,7 +80,9 @@ static void pdgst_elem__register(t_pdgst_elem*x) {
 static void pdgst_elem__deregister(t_pdgst_elem*x) {
   pdgst_bin_remove((t_pdgst_elem*)x);
 }
+
 static void pdgst_elem__infoout_mess(t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv);
+
 void pdgst_elem__gstMess(t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv) {
   t_symbol*selector=NULL;
   if(!argc || !(A_SYMBOL==argv->a_type))
@@ -95,7 +120,13 @@ void pdgst_elem__gstMess(t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv) {
 
 static void pdgst_elem__infoout(t_pdgst_elem*x, int argc, t_atom*argv)
 {
-  outlet_anything(x->x_infout, gensym("info"), argc, argv);
+  if(x&&x->x_infout) {
+    outlet_anything(x->x_infout, gensym("info"), argc, argv);
+  } else {
+    verbose(0, "no infoout found for %x", x);
+    postatom(argc, argv);
+    endpost();
+  }
 }
 static void pdgst_elem__infoout_mess(t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv)
 {
@@ -485,8 +516,9 @@ static void pdgst_elem__add_signals(t_pdgst_elem*x) {
 void pdgst_elem__free(t_pdgst_elem*x)
 {
   GstElement*lmn=x->l_element;
+  post("pdgst_elem__free:%d", __LINE__);
+  /* cleanup the Pd-part */
   pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst);
-
   if(lmn->numsrcpads && lmn->numsinkpads) {
     pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_filter);
   } else if (lmn->numsrcpads) {
@@ -494,16 +526,15 @@ void pdgst_elem__free(t_pdgst_elem*x)
   } else if (lmn->numsrcpads) {
     pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_sink);
   }  
+  x->l_busCallback=NULL;
 
+  /* cleanup the gstreamer part */
   pdgst_elem__deregister(x);
-
-  if(x->l_element) {
-    post("unreffing element");
-    gst_object_unref (GST_OBJECT (x->l_element));
-    post("unreffed element");
-  }
   x->l_element=NULL;
 
+
+  /* final cleanup of Pd */
+  post("pdgst_elem__free:%d", __LINE__);
   if(x->x_gstout && x->x_gstout!=x->x_infout)
     outlet_free(x->x_gstout);
   x->x_gstout=NULL;
@@ -511,6 +542,8 @@ void pdgst_elem__free(t_pdgst_elem*x)
   if(x->x_infout)
     outlet_free(x->x_infout);
   x->x_infout=NULL;
+  post("pdgst_elem__free:%d", __LINE__);
+
 }
 
 
@@ -519,7 +552,7 @@ void pdgst_elem__new(t_pdgst_elem*x, t_symbol*s)
   gchar *name=NULL;
 
   GstElement*lmn=gst_element_factory_make(s->s_name, NULL);
-
+  post("pdgst_elem__new:%d", __LINE__);
   x->l_element=lmn;
   if(NULL==lmn) return;
 
@@ -534,12 +567,13 @@ void pdgst_elem__new(t_pdgst_elem*x, t_symbol*s)
   g_free (name);
 
   x->l_busCallback=(t_method)pdgst_elem__bus_callback;
-
+  post("pdgst_elem__new:%d", __LINE__);
   pdgst_bin_add(x);
+  post("pdgst_elem__new:%d", __LINE__);
   pdgst_elem__add_signals(x);
-
+  post("pdgst_elem__new:%d", __LINE__);
   pd_bind(&x->l_obj.ob_pd, s_pdgst__gst);
-
+  post("pdgst_elem__new:%d", __LINE__);
   if((lmn->numsrcpads > 0) && (lmn->numsinkpads > 0)) {
     pd_bind(&x->l_obj.ob_pd, s_pdgst__gst_filter);
   } else if (lmn->numsrcpads > 0) {
@@ -549,4 +583,5 @@ void pdgst_elem__new(t_pdgst_elem*x, t_symbol*s)
   } else {
     pd_error(x, "[%s]: hmm, element without pads", x->x_name->s_name);
   }
+  post("pdgst_elem__new:%d", __LINE__);
 }

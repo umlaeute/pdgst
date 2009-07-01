@@ -1,0 +1,33 @@
+loads of things
+
+status:
+        
+
+
+information (e.g. query settings):
+        currently info is output on the first outlet with an "info" message
+        +: scales well to modules with varying #outlets
+        -: modules don't know about "info" message
+             . easy fix: just ignore "info" messages; but what happens if a modules actually needs the "info" message?)
+             . use a selector more unlikely to be used: "_info"
+
+graph building:
+      currently graphs are built by sending a "bang" message to [pdgst]
+      how to automatically build graphs?: e.g. polling the outlets regularily
+
+      objects that are just lying around might disturb the pipeline
+
+graph changing:
+      changing a graph at runtime requires recompilation; we don't have any way to detect a graph change in Pd directly
+      idea: just poll all the outlets regularily
+        
+
+stability:
+        crashes when an object gets deleted
+
+
+deleting:
+        deleting active objects in the pipeline might crash Pd
+        deleting objects yields an error:(<unknown>:13903): GLib-GObject-WARNING **: invalid uninstantiatable type `<invalid>' in cast to `GstObject'
+                                         (<unknown>:13903): GStreamer-CRITICAL **: gst_object_unref: assertion `((GObject *) object)->ref_count > 0' failed
+

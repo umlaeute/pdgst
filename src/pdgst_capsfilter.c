@@ -1,4 +1,23 @@
-#include "pdgst.h"
+/******************************************************
+ *
+ * pdgst - implementation file
+ *
+ * copyleft (c) 2009 IOhannes m zmölnig
+ *
+ *   forum::für::umläute
+ *
+ *   institute of electronic music and acoustics (iem)
+ *   university of music and performing arts
+ *
+ ******************************************************
+ *
+ * license: GNU General Public License v.2 or later
+ *
+ ******************************************************/
+
+#warning add docs
+
+#include "pdgst/pdgst.h"
 #include <string.h>
 
 
@@ -98,7 +117,7 @@ int pdgst_capsfilter_setup_class(char*classname)
   snprintf(dummypipeline, MAXPDSTRING-1, "fakesrc ! %s ! fakesink", classname);
   lmn=gst_parse_launch(dummypipeline, &gerror);
   if(lmn){
-    gst_object_unref (GST_OBJECT (lmn));
+    gst_object_unref (GST_OBJECT (lmn)); /* since we own lmn created by gst_parse_launch */
 
     if(gerror)return 0;
 

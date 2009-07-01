@@ -1,4 +1,25 @@
-#include "pdgst.h"
+/******************************************************
+ *
+ * pdgst - implementation file
+ *
+ * copyleft (c) 2009 IOhannes m zmölnig
+ *
+ *   forum::für::umläute
+ *
+ *   institute of electronic music and acoustics (iem)
+ *   university of music and performing arts
+ *
+ ******************************************************
+ *
+ * license: GNU General Public License v.2 or later
+ *
+ ******************************************************/
+
+#warning add docs
+
+
+
+#include "pdgst/pdgst.h"
 #include <string.h>
 
 typedef struct _pdgst_element
@@ -49,15 +70,16 @@ static void pdgst_element__seek (t_pdgst_element*x, t_float time)
 }
 
 
+/* the destructor for elements/objectclasses */
 static void pdgst_element__free(t_pdgst_element*x) {
   pdgst_elem__free(&x->x_elem);
 }
 
+/* the constructor for elements/objectclasses */
 void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   GParamSpec **property_specs;
   GstElement*lmn=NULL;
   guint num_properties, i;
-
 
   t_pdgst_element*x=NULL;
   t_class*c=pdgst_findclass(s);
@@ -68,13 +90,16 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   pdgst_elem__new(&x->x_elem, s);
   lmn=x->x_element;
   if(NULL==lmn) {
-    post("gst factory failed to create element...'%s'", s->s_name);
+    post("pdgst factory failed to create element...'%s'", s->s_name);
     pdgst_poplocale();
     return NULL;
   }
 
-  x->x_props=NULL;
 
+  /* property handling
+   * we build a list of all properties and the expected type of their values 
+   */
+  x->x_props=NULL;
   property_specs = g_object_class_list_properties(G_OBJECT_GET_CLASS (lmn), &num_properties);
   for (i = 0; i < num_properties; i++) {
     x->x_props=pdgst_addproperty(x->x_props, property_specs[i]);
@@ -85,6 +110,11 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   return x;
 }
 
+
+/* this is the loader for gst-elements */
+/* it returns 1 if <classname> appears to be a valid gst-element
+ * and 0 otherwise
+ */
 int pdgst_element_setup_class(char*classname) {
   GstElementFactory *fac = gst_element_factory_find (classname);
   GstElement*lmn=NULL;
@@ -93,26 +123,40 @@ int pdgst_element_setup_class(char*classname) {
 
   t_class*c=NULL;
 
+  /* do we have a gst-factory for <classname> ? if this fails then <classname> is probably not a gst-element, so we return... */
   if(fac==NULL) {
     return 0;
   }
 
+  /* check whether the factory will actually return a valid element; 
+   * if not we won't be able to create objects for this later, so let's get out of here
+   * we need this to query the  class-methods;
+   */
   lmn=gst_element_factory_create(fac, NULL);
   if(lmn==NULL){
     return 0;
   }
 
+  /* so now we are sure that there is an instantiable element, we cab safely create our objectclass */
+
+  /* create a new objectclass for <classname> */
   c=pdgst_addclass(gensym(classname));
+  /* and add the great default method for pdgst-interaction to it */
   class_addmethod  (c, (t_method)pdgst_elem__gstMess, s_pdgst__gst, A_GIMME, 0);
 
+  /* some(?) elements support seek which is not exposed via properties and has to be distributed up/downward through the chain (CHECK) */
   class_addmethod  (c, (t_method)pdgst_element__seek, gensym("_seek"), A_FLOAT, 0);
 
+  /* we want methods to set/get all properties of the element
+   * the "get" method is just the property-name, e.g. [pattern(
+   * the "set" method is just the property-name + the value(s), e.g. [pattern 1(
+   */
   property_specs = g_object_class_list_properties(G_OBJECT_GET_CLASS (lmn), &num_properties);
   for (i = 0; i < num_properties; i++) {
     class_addmethod  (c, (t_method)pdgst_element__any, gensym(property_specs[i]->name), A_GIMME, 0);
   }
   g_free (property_specs);
-  gst_object_unref (GST_OBJECT (lmn));
+  gst_object_unref (GST_OBJECT (lmn)); /* since we own lmn returned by gst_element_factory_create() */
   return 1;
 }
 
