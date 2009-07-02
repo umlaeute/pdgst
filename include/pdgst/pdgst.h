@@ -61,9 +61,6 @@
 
 #include "pdgst/properties.h"
 
-t_class*pdgst_findclass(t_symbol*s);
-t_class*pdgst_addclass(t_symbol*s);
-
 #define x_element x_elem.l_element
 #define x_obj x_elem.l_obj
 #define x_canvas x_elem.l_canvas

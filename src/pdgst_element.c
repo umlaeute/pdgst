@@ -26,6 +26,11 @@
 #include "pdgst/pdgst.h"
 #include <string.h>
 
+
+static t_class*pdgst_findclass(t_symbol*s);
+static t_class*pdgst_addclass(t_symbol*s);
+
+
 typedef struct _pdgst_element
 {
   t_pdgst_base x_elem;
@@ -85,8 +90,7 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   GstElement*lmn=NULL;
   guint num_properties, i;
 
-  t_pdgst_element*x=NULL;
-  t_class*c=pdgst_findclass(s);
+  t_pdgst_element*x=NULL; t_class*c=pdgst_findclass(s);
   if(!c)return NULL;
   pdgst_pushlocale();
 
@@ -94,11 +98,10 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   pdgst_base__new(&x->x_elem, s);
   lmn=x->x_element;
   if(NULL==lmn) {
-    post("pdgst factory failed to create element...'%s'", s->s_name);
+    error("pdgst factory failed to create element...'%s'", s->s_name);
     pdgst_poplocale();
     return NULL;
   }
-
 
   /* property handling
    * we build a list of all properties and the expected type of their values 
@@ -115,7 +118,24 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
 }
 
 
-/* this is the loader for gst-elements */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =============================================================================== *
+ * PdGst - element loader 
+ * =============================================================================== */
+
 /* it returns 1 if <classname> appears to be a valid gst-element
  * and 0 otherwise
  */
@@ -148,6 +168,10 @@ int pdgst_element_setup_class(char*classname) {
   /* and add the great default method for pdgst-interaction to it */
   class_addmethod  (c, (t_method)pdgst_base__gstMess, s_pdgst__gst, A_GIMME, 0);
 
+#warning _info hack
+  class_addmethod  (c, (t_method)pdgst_base__infoMess, gensym("_info"), A_GIMME, 0);
+
+
   /* some(?) elements support seek which is not exposed via properties and has to be distributed up/downward through the chain (CHECK) */
   class_addmethod  (c, (t_method)pdgst_element__seek, gensym("_seek"), A_FLOAT, 0);
 
@@ -164,12 +188,7 @@ int pdgst_element_setup_class(char*classname) {
   return 1;
 }
 
-
-
-/* =============================================================================== */
 /* class handling */
-
-
 typedef struct _pdgst_classes {
   struct _pdgst_classes*next;
   t_symbol*name;
@@ -177,7 +196,7 @@ typedef struct _pdgst_classes {
 } t_pdgst_classes;
 static t_pdgst_classes*pdgst_classes=NULL;
 
-t_class*pdgst_findclass(t_symbol*s)
+static t_class*pdgst_findclass(t_symbol*s)
 {
   t_pdgst_classes*cl=pdgst_classes;
   while(cl) {
@@ -188,10 +207,11 @@ t_class*pdgst_findclass(t_symbol*s)
   }
   return NULL;
 }
-t_class*pdgst_addclass(t_symbol*s)
+static t_class*pdgst_addclass(t_symbol*s)
 {
   t_class*c=pdgst_findclass(s);
   if(NULL==c) {
+    /* an unheard-of class; create a real objectclass and store it for later use */
     t_pdgst_classes*cl0=pdgst_classes;
     t_pdgst_classes*cl=(t_pdgst_classes*)getbytes(sizeof(t_pdgst_classes));
     c = class_new(s,
@@ -201,11 +221,10 @@ t_class*pdgst_addclass(t_symbol*s)
                   0,
                   A_GIMME, 0);
 
+    /* append the new class to our list of pdgst-classes */
     cl->next=NULL;
     cl->name=s;
     cl->class=c;
-
-    /* seeking to the end of our classlist */
     while(cl0 && cl0->next) {
       cl0=cl0->next;
     }

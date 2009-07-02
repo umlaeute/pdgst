@@ -20,7 +20,12 @@
  *
  * derived from pdgst_elem
  *
- * doesn't work yet
+ * doesn't work yet: how do we find-out whether a certain class is actually a capsfilter?
+ *
+ *
+ * note on inheritance:
+ *   pdgst_element is quite complex, as it creates a real objectclass for each pdgst-element
+ *   this is not necessary with capsfilters: they all belong to the same base-objectclass [pdgst_capsfilter]
  */
 
 

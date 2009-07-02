@@ -27,12 +27,13 @@
 #include "pdgst/pdgst.h"
 #include <string.h>
 
-
-static t_symbol*s_pdgst__info=NULL;
-
-
 /* outlet/output handling */
 
+/* for now, objects will output required information as an "_info" message; we might want to ignore such messages coming from upstream... */
+/* LATER: use a 2nd outlet for info-messages */
+void pdgst_base__infoMess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv) {
+  /* silently drop _info messages from upstream pdgst-objects */
+}
 
 /* _gst messages for pd-based communication between gstreamer-elements */
 static void pdgst_base__gstout(t_pdgst_base*x, int argc, t_atom*argv)
@@ -109,14 +110,7 @@ static void pdgst_outputparam(t_pdgst_base*x, t_symbol*name, t_atom*a)
 }
 
 
-
-
-
-
-
-
-
-
+/* input handling */
 
 
 static void pdgst_base__connect_init(t_pdgst_base*x) {
@@ -155,6 +149,9 @@ static void pdgst_base__register(t_pdgst_base*x) {
 static void pdgst_base__deregister(t_pdgst_base*x) {
   pdgst_bin_remove((t_pdgst_base*)x);
 }
+
+
+
 
 void pdgst_base__gstMess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv) {
   t_symbol*selector=NULL;
