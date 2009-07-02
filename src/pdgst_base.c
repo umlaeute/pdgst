@@ -27,29 +27,97 @@
 #include "pdgst/pdgst.h"
 #include <string.h>
 
+
+static t_symbol*s_pdgst__info=NULL;
+
+
+/* outlet/output handling */
+
+
+/* _gst messages for pd-based communication between gstreamer-elements */
 static void pdgst_base__gstout(t_pdgst_base*x, int argc, t_atom*argv)
 {
   if(x&&x->x_gstout) {
     outlet_anything(x->x_gstout, s_pdgst__gst, argc, argv);
   } else {
-    verbose(0, "no gstout found for %x", x);
+    if(x && x->x_gstname) {
+      pd_error(x, "[%s] ", x->x_gstname->s_name);
+    } else error("pdgst: ");
     postatom(argc, argv);
     endpost();
   }
 }
 static void pdgst_base__gstout_mess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv)
 {
-  int ac=argc+1;
-  t_atom*av=(t_atom*)getbytes(sizeof(t_atom)*ac);
-  SETSYMBOL(av, s);
-  memcpy(av+1, argv, (sizeof(t_atom)*argc));
+  if(NULL==s) {
+    pdgst_base__gstout(x, argc, argv);
+  } else {
+    int ac=argc+1;
+    t_atom*av=(t_atom*)getbytes(sizeof(t_atom)*ac);
+    SETSYMBOL(av, s);
+    memcpy(av+1, argv, (sizeof(t_atom)*argc));
+    
+    pdgst_base__gstout(x, ac, av);
 
-  pdgst_base__gstout(x, ac, av);
-
-  freebytes(av, sizeof(t_atom)*(ac));
-  av=NULL;
-  ac=0;
+    freebytes(av, sizeof(t_atom)*(ac));
+    av=NULL;
+    ac=0;
+  }
 }
+/* _info messages to retrieve information from gstreamer-elements into Pd-world */
+static void pdgst_base__infoout(t_pdgst_base*x, int argc, t_atom*argv)
+{
+  if(x&&x->x_infout) {
+    outlet_anything(x->x_infout, gensym("_info"), argc, argv);
+  } else {
+    if(x && x->x_gstname) {
+      pd_error(x, "info[%s] ", x->x_gstname->s_name);
+    } else error("pdgst_info: ");
+    postatom(argc, argv);
+    endpost();
+  }
+}
+
+static void pdgst_base__infoout_mess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv)
+{
+  if(NULL==s) {
+    pdgst_base__infoout(x, argc, argv);
+  } else {
+    int ac=argc+1;
+    t_atom*av=(t_atom*)getbytes(sizeof(t_atom)*ac);
+    SETSYMBOL(av, s);
+    memcpy(av+1, argv, (sizeof(t_atom)*argc));
+
+    pdgst_base__infoout(x, ac, av);
+
+    freebytes(av, sizeof(t_atom)*(ac));
+    av=NULL;
+    ac=0;
+  }
+}
+
+static void pdgst_outputparam(t_pdgst_base*x, t_symbol*name, t_atom*a)
+{
+  t_atom ap[3];
+  SETSYMBOL(ap+0, gensym("property"));
+  SETSYMBOL(ap+1, name);
+
+  ap[2].a_type=a->a_type;
+  ap[2].a_w=a->a_w;
+
+  pdgst_base__infoout(x, 3, ap);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 static void pdgst_base__connect_init(t_pdgst_base*x) {
   t_atom ap[1];
@@ -88,8 +156,6 @@ static void pdgst_base__deregister(t_pdgst_base*x) {
   pdgst_bin_remove((t_pdgst_base*)x);
 }
 
-static void pdgst_base__infoout_mess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv);
-
 void pdgst_base__gstMess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv) {
   t_symbol*selector=NULL;
   if(!argc || !(A_SYMBOL==argv->a_type))
@@ -123,43 +189,6 @@ void pdgst_base__gstMess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv) {
   }
   else
     post("_gst: %s", selector->s_name);
-}
-
-static void pdgst_base__infoout(t_pdgst_base*x, int argc, t_atom*argv)
-{
-  if(x&&x->x_infout) {
-    outlet_anything(x->x_infout, gensym("info"), argc, argv);
-  } else {
-    verbose(0, "no infoout found for %x", x);
-    postatom(argc, argv);
-    endpost();
-  }
-}
-static void pdgst_base__infoout_mess(t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv)
-{
-  int ac=argc+1;
-  t_atom*av=(t_atom*)getbytes(sizeof(t_atom)*ac);
-  SETSYMBOL(av, s);
-  memcpy(av+1, argv, (sizeof(t_atom)*argc));
-
-  pdgst_base__infoout(x, ac, av);
-
-  freebytes(av, sizeof(t_atom)*(ac));
-  av=NULL;
-  ac=0;
-}
-
-
-static void pdgst_outputparam(t_pdgst_base*x, t_symbol*name, t_atom*a)
-{
-  t_atom ap[3];
-  SETSYMBOL(ap+0, gensym("property"));
-  SETSYMBOL(ap+1, name);
-
-  ap[2].a_type=a->a_type;
-  ap[2].a_w=a->a_w;
-
-  pdgst_base__infoout(x, 3, ap);
 }
 
 /* should be "static t_atom*" */
