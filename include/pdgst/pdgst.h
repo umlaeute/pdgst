@@ -78,9 +78,9 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v);
 
 /* pdgst.c */
 t_symbol*pdgst_privatesymbol(void);
-void pdgst_bin_add(t_pdgst_elem*element);
-void pdgst_bin_remove(t_pdgst_elem*element);
-GstBin*pdgst_get_bin(t_pdgst_elem*element);
+void pdgst_bin_add(t_pdgst_base*element);
+void pdgst_bin_remove(t_pdgst_base*element);
+GstBin*pdgst_get_bin(t_pdgst_base*element);
 
 void pdgst_pushlocale(void);
 void pdgst_poplocale(void);

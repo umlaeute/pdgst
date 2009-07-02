@@ -53,21 +53,6 @@ typedef struct _pdgst
   GstElement*x_pipeline;
 } t_pdgst;
 
-static void pdgst_elem__infoout(t_pdgst_elem*x, int argc, t_atom*argv)
-{
-  if(argc) {
-    if(A_SYMBOL==argv->a_type) {
-      outlet_anything(x->x_infout, atom_getsymbol(argv), argc-1, argv+1);
-    } else {
-      outlet_list(x->x_infout, 0, argc, argv);
-    }
-  } else {
-    outlet_bang(x->x_infout);
-  }
-}
-
-
-
 static void pdgst__send_(t_symbol*s, int argc, t_atom*argv)
 {
   if(s->s_thing)typedmess(s->s_thing, s_pdgst__gst, argc, argv);
@@ -86,7 +71,7 @@ static void pdgst__send_symbol(t_symbol*s)
 }
 
 
-void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_elem*x) {
+void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
   t_method cb=x->l_busCallback;
   GstElement*src=NULL;
 
@@ -128,7 +113,7 @@ void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_elem*x) {
 
 }
 
-static GstElement*pdgst__getcontainer(t_pdgst_elem*element)
+static GstElement*pdgst__getcontainer(t_pdgst_base*element)
 {
   /* LATER: try to find the responsible [pdgst] object for the given element 
    * and extract the bin/pipeline from there
@@ -136,7 +121,7 @@ static GstElement*pdgst__getcontainer(t_pdgst_elem*element)
   return s_pipeline;
 }
 
-void pdgst_bin_add(t_pdgst_elem*element)
+void pdgst_bin_add(t_pdgst_base*element)
 {
   /* LATER: do not ignore canvas within the element structure0 */
   GstElement*gele=pdgst__getcontainer(element);
@@ -146,7 +131,7 @@ void pdgst_bin_add(t_pdgst_elem*element)
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 }
 
-void pdgst_bin_remove(t_pdgst_elem*element)
+void pdgst_bin_remove(t_pdgst_base*element)
 {
   GstState state, pending;
   GstElement*gele=pdgst__getcontainer(element);
@@ -160,7 +145,7 @@ void pdgst_bin_remove(t_pdgst_elem*element)
 
 }
 
-GstBin*pdgst_get_bin(t_pdgst_elem*element)
+GstBin*pdgst_get_bin(t_pdgst_base*element)
 {
   /* LATER: try to find the responsible [pdgst] object for the given element 
    * and extract the bin/pipeline from there

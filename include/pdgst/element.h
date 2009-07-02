@@ -26,7 +26,7 @@
 
 
 /* pdgst_elem.c */
-typedef struct _pdgst_elem
+typedef struct _pdgst_base
 {
   t_object l_obj;
   t_canvas  *l_canvas;
@@ -39,13 +39,13 @@ typedef struct _pdgst_elem
 
   t_symbol*x_name;
   t_symbol*x_gstname;
-} t_pdgst_elem;
+} t_pdgst_base;
 
-void pdgst_elem__gstMess (t_pdgst_elem*x, t_symbol*s, int argc, t_atom*argv);
-void pdgst_elem__setParam(t_pdgst_elem*x, t_pdgst_property*prop, t_atom*ap);
-void pdgst_elem__getParam(t_pdgst_elem*x, t_pdgst_property*prop);
-void pdgst_elem__free(t_pdgst_elem*x);
-void pdgst_elem__new (t_pdgst_elem*x, t_symbol*s);
+void pdgst_base__gstMess (t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv);
+void pdgst_base__setParam(t_pdgst_base*x, t_pdgst_property*prop, t_atom*ap);
+void pdgst_base__getParam(t_pdgst_base*x, t_pdgst_property*prop);
+void pdgst_base__free(t_pdgst_base*x);
+void pdgst_base__new (t_pdgst_base*x, t_symbol*s);
 
 
 /* pdgst_element.c */

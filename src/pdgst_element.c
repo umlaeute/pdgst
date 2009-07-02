@@ -19,7 +19,7 @@
 /* pdgst_element.c
  *    objectclass for gstreamer-elements
  *
- * derived from pdgst_elem
+ * derived from pdgst_base
  */
 
 
@@ -28,7 +28,7 @@
 
 typedef struct _pdgst_element
 {
-  t_pdgst_elem x_elem;
+  t_pdgst_base x_elem;
 
   t_pdgst_property*x_props;
 } t_pdgst_element;
@@ -39,7 +39,7 @@ static void pdgst_element__any(t_pdgst_element*x, t_symbol*s, int argc, t_atom*a
     /* get */
     t_pdgst_property*prop=pdgst_getproperty(x->x_props, s);
     if(prop && prop->flags & G_PARAM_READABLE) {
-      pdgst_elem__getParam(&x->x_elem, prop);
+      pdgst_base__getParam(&x->x_elem, prop);
     } else {
       pd_error(x, "[%s] no query method for '%s'", x->x_elem.x_name->s_name, s->s_name);
       return;
@@ -48,9 +48,9 @@ static void pdgst_element__any(t_pdgst_element*x, t_symbol*s, int argc, t_atom*a
     /* set */
     t_pdgst_property*prop=pdgst_getproperty(x->x_props, s);
     if(prop && prop->flags & G_PARAM_WRITABLE) {
-      pdgst_elem__setParam(&x->x_elem, prop, argv);
+      pdgst_base__setParam(&x->x_elem, prop, argv);
       if(prop->flags & G_PARAM_READABLE)
-        pdgst_elem__getParam(&x->x_elem, prop);
+        pdgst_base__getParam(&x->x_elem, prop);
     } else {
       pd_error(x, "[%s] no set method for '%s'", x->x_elem.x_name->s_name, s->s_name);
       return;
@@ -76,7 +76,7 @@ static void pdgst_element__seek (t_pdgst_element*x, t_float time)
 
 /* the destructor for elements/objectclasses */
 static void pdgst_element__free(t_pdgst_element*x) {
-  pdgst_elem__free(&x->x_elem);
+  pdgst_base__free(&x->x_elem);
 }
 
 /* the constructor for elements/objectclasses */
@@ -91,7 +91,7 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   pdgst_pushlocale();
 
   x=(t_pdgst_element*)pd_new(c);
-  pdgst_elem__new(&x->x_elem, s);
+  pdgst_base__new(&x->x_elem, s);
   lmn=x->x_element;
   if(NULL==lmn) {
     post("pdgst factory failed to create element...'%s'", s->s_name);
@@ -146,7 +146,7 @@ int pdgst_element_setup_class(char*classname) {
   /* create a new objectclass for <classname> */
   c=pdgst_addclass(gensym(classname));
   /* and add the great default method for pdgst-interaction to it */
-  class_addmethod  (c, (t_method)pdgst_elem__gstMess, s_pdgst__gst, A_GIMME, 0);
+  class_addmethod  (c, (t_method)pdgst_base__gstMess, s_pdgst__gst, A_GIMME, 0);
 
   /* some(?) elements support seek which is not exposed via properties and has to be distributed up/downward through the chain (CHECK) */
   class_addmethod  (c, (t_method)pdgst_element__seek, gensym("_seek"), A_FLOAT, 0);

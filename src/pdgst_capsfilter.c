@@ -33,7 +33,7 @@
 static t_class*pdgst_capsfilter_class=NULL;
 typedef struct _pdgst_capsfilter
 {
-  t_pdgst_elem x_elem;
+  t_pdgst_base x_elem;
   GstCaps*x_caps;
 } t_pdgst_capsfilter;
 
@@ -54,14 +54,14 @@ static void pdgst_capsfilter__bang(t_pdgst_capsfilter*x) {
 }
 
 static void pdgst_capsfilter__free(t_pdgst_capsfilter*x) {
-  pdgst_elem__free(&x->x_elem);
+  pdgst_base__free(&x->x_elem);
 }
 
 static void *pdgst_capsfilter__new(t_symbol*s, int argc, t_atom* argv) {
   t_pdgst_capsfilter*x=(t_pdgst_capsfilter*)pd_new(pdgst_capsfilter_class);
   GstStructure *struc= gst_structure_empty_new(s->s_name);
 
-  pdgst_elem__new(&x->x_elem, gensym("capsfilter"));
+  pdgst_base__new(&x->x_elem, gensym("capsfilter"));
   if(NULL==x->x_element) {
     return NULL;
   }
@@ -149,6 +149,6 @@ void pdgst_capsfilter_setup(void)
                                    sizeof(t_pdgst_capsfilter),
                                    0 /* CLASS_NOINLET */,
                                    A_GIMME, 0);
-  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_elem__gstMess, s_pdgst__gst, A_GIMME, 0);
+  class_addmethod  (pdgst_capsfilter_class, (t_method)pdgst_base__gstMess, s_pdgst__gst, A_GIMME, 0);
   class_addbang  (pdgst_capsfilter_class, (t_method)pdgst_capsfilter__bang);
 }
