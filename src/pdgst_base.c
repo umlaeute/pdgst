@@ -580,6 +580,7 @@ void pdgst_base__free(t_pdgst_base*x)
   x->l_element=NULL;
 
 
+  x->x_name=NULL;
 
   /* final cleanup of Pd */
   if(x->x_gstout && x->x_gstout!=x->x_infout)

@@ -83,7 +83,9 @@ static void pdgst_element__seek (t_pdgst_element*x, t_float time)
 
 /* the destructor for elements/objectclasses */
 static void pdgst_element__free(t_pdgst_element*x) {
+  post("freeing [%s] at %x", x->x_elem.x_name->s_name, x);
   pdgst_base__free(&x->x_elem);
+  post("freed %x", x);
 }
 static t_atom*pdgst_element__findnextkey(int argc, t_atom*argv)
 {
@@ -127,8 +129,6 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   }
   g_free (property_specs);
 
-
-
   /* argument handling */
   /* ideas:
    *    key-value pairs with keys starting with "@":
@@ -169,6 +169,9 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   }
 
   pdgst_poplocale();
+
+
+  post("created [%s] at %x", s->s_name, x);
   return x;
 }
 

@@ -74,33 +74,35 @@ void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
   t_method cb=NULL;
   GstElement*src=NULL;
 
-  post("lmn-buscb: %x %x %x \t%x", bus, msg, x, cb);
-  post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
-
-#if 1
-  startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
-#endif
-
   if(NULL==x) {
     verbose(1, "NULL object passed to gst-buscallback");
     return;
   }
 
   if(NULL==x->x_name  || NULL==x->x_name->s_name) {
-    verbose(1, "unnamed object passed to gst-buscallback");
+    verbose(1, "unnamed object %x passed to gst-buscallback", x);
     return;
   }
 
   cb=x->l_busCallback;
   if(NULL==cb) {
-    verbose(1, "no gst-buscallback available");
+    verbose(1, "no gst-buscallback available for object %x", x);
     return;
   }
 
   if(!G_IS_OBJECT(x->l_element)) {
-    error("invalid gst-object %x", x->l_element);
+    error("invalid gst-object %x of object %x", x->l_element, x);
     return;
   }
+
+
+#if 1
+  post("lmn-buscb: %x %x %x \t%x", bus, msg, x, cb);
+  post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
+
+  startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
+#endif
+
 
 
   post("pdgst__element_buscallback: %d", __LINE__);
@@ -116,14 +118,14 @@ void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
   if(1) {
     gchar *name0=NULL, *name1=NULL;
     g_object_get (G_OBJECT (src), "name", &name0, NULL);
-    startpost("x->element[%x]=", x->l_element);
+    //startpost("x->element[%x]=", x->l_element);
     g_object_get (G_OBJECT (x->l_element), "name", &name1, NULL);
     //post("%s", name1);  post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
     g_free (name0);
     g_free (name1);
   }
 #endif
-  //post("pdgst__element_buscallback: %d", __LINE__);
+  post("pdgst__element_buscallback: %d", __LINE__);
   if(src==x->l_element) {
     //post("pdgst__element_buscallback: %d", __LINE__);
     (*(t_gotfn)(*cb))(x, msg);
@@ -195,6 +197,7 @@ void pdgst_bin_remove(t_pdgst_base*element)
   if(id) {
     if (g_signal_handler_is_connected (bus, id))
       g_signal_handler_disconnect (bus, id);
+    element->l_bincb_id=0;
   } {
     post("no buscallback-handler to remove for element %x", element);
   }

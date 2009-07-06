@@ -43,3 +43,4 @@ deleting:
 specifics
 =========
 
+ bus-callback-handler (deletion) not working at all it seems like the handle does not really get updated...CHECK code where the buscb_id get's set
