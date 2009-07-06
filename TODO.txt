@@ -3,7 +3,6 @@ loads of things
 status:
         
 
-
 information (e.g. query settings):
         currently info is output on the first outlet with an "info" message
         +: scales well to modules with varying #outlets
