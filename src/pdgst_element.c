@@ -40,6 +40,7 @@ typedef struct _pdgst_element
 
 
 static void pdgst_element__any(t_pdgst_element*x, t_symbol*s, int argc, t_atom*argv) {
+  //  startpost("%s: ", s->s_name); postatom(argc, argv);endpost();
   if(!argc) {
     /* get */
     t_pdgst_property*prop=pdgst_getproperty(x->x_props, s);
@@ -53,6 +54,7 @@ static void pdgst_element__any(t_pdgst_element*x, t_symbol*s, int argc, t_atom*a
     /* set */
     t_pdgst_property*prop=pdgst_getproperty(x->x_props, s);
     if(prop && prop->flags & G_PARAM_WRITABLE) {
+      verbose(0, "setting property '%s'", s->s_name);
       pdgst_base__setParam(&x->x_elem, prop, argv);
       if(prop->flags & G_PARAM_READABLE)
         pdgst_base__getParam(&x->x_elem, prop);
@@ -83,6 +85,18 @@ static void pdgst_element__seek (t_pdgst_element*x, t_float time)
 static void pdgst_element__free(t_pdgst_element*x) {
   pdgst_base__free(&x->x_elem);
 }
+static t_atom*pdgst_element__findnextkey(int argc, t_atom*argv)
+{
+  while(argc>0) {
+    if(A_SYMBOL==argv->a_type && '@'==*atom_getsymbol(argv)->s_name) {
+      return argv;
+    }
+    argv++;
+    argc--;
+  }
+  return NULL;
+}
+
 
 /* the constructor for elements/objectclasses */
 void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
@@ -112,6 +126,47 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
     x->x_props=pdgst_addproperty(x->x_props, property_specs[i]);
   }
   g_free (property_specs);
+
+
+
+  /* argument handling */
+  /* ideas:
+   *    key-value pairs with keys starting with "@":
+   *         e.g. "@hue 100 @saturation -100"
+   *         + no complicated parsing
+   *         - easy to demand value without key
+   *    gst-assignments 
+   *         e.g. "hue=100 saturation=-100"
+   *         + compatible with gst-syntax
+   *         - complicated parsing
+   *         - easy to demand key without value
+   */
+
+  /* for now, we do '@<key> <value>' */
+  if(1) {
+    t_atom*av=pdgst_element__findnextkey(argc, argv);
+    int offset=av-argv;
+    argv=av;
+    argc-=offset;
+
+    while(argv) {
+      t_symbol*key=gensym(atom_getsymbol(argv)->s_name+1);
+      argv++;
+      argc--;
+
+      av=pdgst_element__findnextkey(argc, argv);
+      offset=av-argv;
+
+      if(av) {
+        pdgst_element__any(x, key, (av-argv), argv);
+      } else if (argc>0) {
+        pdgst_element__any(x, key, argc, argv);
+      }
+
+      argv=av;
+      argc-=offset;
+    }
+  }
 
   pdgst_poplocale();
   return x;

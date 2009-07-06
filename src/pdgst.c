@@ -372,12 +372,14 @@ static int pdgst_loader_init(void)
 static char*s_locale=NULL;
 void pdgst_pushlocale(void)
 {
+  if(s_locale)post("pushing locale '%s'", s_locale);
   s_locale=setlocale(LC_NUMERIC, NULL);
   setlocale(LC_NUMERIC, "C");
 }
 
 void pdgst_poplocale(void)
 {
+  if(!s_locale)post("popping empty locale");
   setlocale(LC_NUMERIC, s_locale);
   s_locale=NULL;
 }
