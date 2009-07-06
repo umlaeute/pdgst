@@ -17,6 +17,13 @@ graph building:
 
       objects that are just lying around might disturb the pipeline
 
+
+
+      idea: currently a sink-element will attach itself to a source-element
+            how about making the source-element attach a sink to itself?
+            implementation:   
+                src sends out a ping; snk replies to ping (either directly )
+
 graph changing:
       changing a graph at runtime requires recompilation; we don't have any way to detect a graph change in Pd directly
       idea: just poll all the outlets regularily
@@ -36,6 +43,4 @@ deleting:
 
 specifics
 =========
-        arguments:
-                arguments to the objects are not passed to the element
 

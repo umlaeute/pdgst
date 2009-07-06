@@ -139,11 +139,13 @@ static void pdgst_base__connect(t_pdgst_base*x, t_symbol*s, t_symbol*spad) {
 
   gst_object_unref (src);  /* since we own src returned by gst_bin_get_by_name() */
 
+
+  /* connect the downstream objects to us */
   pdgst_base__connect_init(x);
 }
 
 static void pdgst_base__register(t_pdgst_base*x) {
- pdgst_bin_add((t_pdgst_base*)x);
+  pdgst_bin_add((t_pdgst_base*)x);
 }
 
 static void pdgst_base__deregister(t_pdgst_base*x) {
@@ -352,7 +354,7 @@ static void pdgst_base__bus_callback(t_pdgst_base*x, GstMessage*message) {
     SETFLOAT(ap+0, (t_float)oldstate);
     SETFLOAT(ap+1, (t_float)newstate);
     SETFLOAT(ap+2, (t_float)pending);
-    pdgst_base__infoout_mess(x, gensym("state"), 3, ap);
+    pdgst_base__infoout_mess(x, gensym("state_changed"), 3, ap);
   }
     break;
   case GST_MESSAGE_STATE_DIRTY:
@@ -553,7 +555,7 @@ static void pdgst_base__add_signals(t_pdgst_base*x) {
 void pdgst_base__free(t_pdgst_base*x)
 {
   GstElement*lmn=x->l_element;
-  post("pdgst_base__free:%d", __LINE__);
+  post("freeing object %x", x);
   /* cleanup the Pd-part */
   pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst);
   if(lmn->numsrcpads && lmn->numsinkpads) {
@@ -566,12 +568,20 @@ void pdgst_base__free(t_pdgst_base*x)
   x->l_busCallback=NULL;
 
   /* cleanup the gstreamer part */
+  post("pdgst_base_free: %d", __LINE__);
   pdgst_base__deregister(x);
+  post("pdgst_base_free: %d", __LINE__);
+  gst_element_get_state(x->l_element, NULL, NULL, GST_CLOCK_TIME_NONE );
+  pdgst_loop_flush();
+  post("pdgst_base_free: %d", __LINE__);
+
+
+  gst_object_unref (x->l_element);
   x->l_element=NULL;
 
 
+
   /* final cleanup of Pd */
-  post("pdgst_base__free:%d", __LINE__);
   if(x->x_gstout && x->x_gstout!=x->x_infout)
     outlet_free(x->x_gstout);
   x->x_gstout=NULL;
@@ -579,8 +589,6 @@ void pdgst_base__free(t_pdgst_base*x)
   if(x->x_infout)
     outlet_free(x->x_infout);
   x->x_infout=NULL;
-  post("pdgst_base__free:%d", __LINE__);
-
 }
 
 
@@ -589,8 +597,10 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   gchar *name=NULL;
 
   GstElement*lmn=gst_element_factory_make(s->s_name, NULL);
-  post("pdgst_base__new:%d", __LINE__);
   x->l_element=lmn;
+  gst_object_ref (x->l_element);
+
+  post("pdgst[%x]=%s", lmn, s->s_name);
   if(NULL==lmn) return;
 
   x->x_infout=outlet_new(&x->l_obj, 0);
@@ -604,13 +614,11 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   g_free (name);
 
   x->l_busCallback=(t_method)pdgst_base__bus_callback;
-  post("pdgst_base__new:%d", __LINE__);
+  x->l_bincb_id=0;
+
   pdgst_bin_add(x);
-  post("pdgst_base__new:%d", __LINE__);
   pdgst_base__add_signals(x);
-  post("pdgst_base__new:%d", __LINE__);
   pd_bind(&x->l_obj.ob_pd, s_pdgst__gst);
-  post("pdgst_base__new:%d", __LINE__);
   if((lmn->numsrcpads > 0) && (lmn->numsinkpads > 0)) {
     pd_bind(&x->l_obj.ob_pd, s_pdgst__gst_filter);
   } else if (lmn->numsrcpads > 0) {
@@ -620,5 +628,4 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   } else {
     pd_error(x, "[%s]: hmm, element without pads", x->x_name->s_name);
   }
-  post("pdgst_base__new:%d", __LINE__);
 }

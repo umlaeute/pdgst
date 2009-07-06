@@ -85,6 +85,7 @@ void pdgst_poplocale(void);
 
 /* from loop.c */
 void pdgst_loop_setup(void);
+void pdgst_loop_flush(void);
 
 
 /* from nowhere */

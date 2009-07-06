@@ -37,9 +37,10 @@ typedef struct _pdgst_base
   GstElement*l_element;
   t_method l_busCallback;
 
+  gulong   l_bincb_id; /* bus callback for bin */
+
   t_outlet*x_infout;
   t_outlet*x_gstout;
-
 
   t_symbol*x_name;
   t_symbol*x_gstname;

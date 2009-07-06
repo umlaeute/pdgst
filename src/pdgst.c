@@ -43,8 +43,6 @@ t_symbol*s_pdgst__gst_sink=NULL;
 
 static GstElement *s_pipeline=NULL;
 
-
-
 static t_class*pdgst_class=NULL;
 typedef struct _pdgst
 {
@@ -55,6 +53,7 @@ typedef struct _pdgst
 
 static void pdgst__send_(t_symbol*s, int argc, t_atom*argv)
 {
+  //  post("pdgst:send to %s", s->s_name);
   if(s->s_thing)typedmess(s->s_thing, s_pdgst__gst, argc, argv);
 }
 
@@ -72,35 +71,64 @@ static void pdgst__send_symbol(t_symbol*s)
 
 
 void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
-  t_method cb=x->l_busCallback;
+  t_method cb=NULL;
   GstElement*src=NULL;
 
+  post("lmn-buscb: %x %x %x \t%x", bus, msg, x, cb);
+  post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
+
+#if 1
+  startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
+#endif
+
+  if(NULL==x) {
+    verbose(1, "NULL object passed to gst-buscallback");
+    return;
+  }
+
+  if(NULL==x->x_name  || NULL==x->x_name->s_name) {
+    verbose(1, "unnamed object passed to gst-buscallback");
+    return;
+  }
+
+  cb=x->l_busCallback;
   if(NULL==cb) {
-    verbose(0, "no bus callback available");
+    verbose(1, "no gst-buscallback available");
+    return;
+  }
+
+  if(!G_IS_OBJECT(x->l_element)) {
+    error("invalid gst-object %x", x->l_element);
     return;
   }
 
 
+  post("pdgst__element_buscallback: %d", __LINE__);
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
     src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
-
+  post("pdgst__element_buscallback: %d", __LINE__);
   if(!src) {
-    error("fixme: message without source");
+    error("fixme: gst-busmessage without source");
     return;
   }
-
-  if(0) {
+  // post("pdgst__element_buscallback: %d", __LINE__);
+#if 1
+  if(1) {
     gchar *name0=NULL, *name1=NULL;
     g_object_get (G_OBJECT (src), "name", &name0, NULL);
+    startpost("x->element[%x]=", x->l_element);
     g_object_get (G_OBJECT (x->l_element), "name", &name1, NULL);
-    //    post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
+    //post("%s", name1);  post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
     g_free (name0);
     g_free (name1);
   }
-
+#endif
+  //post("pdgst__element_buscallback: %d", __LINE__);
   if(src==x->l_element) {
+    //post("pdgst__element_buscallback: %d", __LINE__);
     (*(t_gotfn)(*cb))(x, msg);
   } else {
+    //post("pdgst__element_buscallback: %d", __LINE__);
     // hmm, this is a message originating from somebody else
     // how should we do that?
     // LATER make x aware that this is from somebody else...
@@ -108,9 +136,8 @@ void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
     if(src==s_pipeline) {
       (*(t_gotfn)(*cb))(x, msg);
     }
-
   }
-
+  post("buscallback done");
 }
 
 static GstElement*pdgst__getcontainer(t_pdgst_base*element)
@@ -121,14 +148,35 @@ static GstElement*pdgst__getcontainer(t_pdgst_base*element)
   return s_pipeline;
 }
 
+GstBin*pdgst_get_bin(t_pdgst_base*element)
+{
+  /* LATER: try to find the responsible [pdgst] object for the given element 
+   * and extract the bin/pipeline from there
+   */
+  return GST_BIN(pdgst__getcontainer(element));
+}
+
+
 void pdgst_bin_add(t_pdgst_base*element)
 {
   /* LATER: do not ignore canvas within the element structure0 */
   GstElement*gele=pdgst__getcontainer(element);
   GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
-  gst_bin_add(GST_BIN(gele), element->l_element);
-  g_signal_connect (bus, "message", G_CALLBACK(pdgst__element_buscallback), element);
+  gulong handler=0;
+
+  if(NULL!=gst_bin_get_by_name(GST_BIN(gele), gst_element_get_name(element->l_element))) {
+    /* hey, this has already been added to our pipeline... */
+    return;
+  }
+
+  if(gst_bin_add(GST_BIN(gele), element->l_element)) {
+  } else {
+    post("could not add element %s", element->x_name->s_name);
+  }
+  handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst__element_buscallback), element);
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
+
+  element->l_bincb_id=handler;
 }
 
 void pdgst_bin_remove(t_pdgst_base*element)
@@ -136,25 +184,29 @@ void pdgst_bin_remove(t_pdgst_base*element)
   GstState state, pending;
   GstElement*gele=pdgst__getcontainer(element);
 
-  if(element->l_element) {
-    gst_element_set_state (element->l_element, GST_STATE_NULL);
-    if(gst_bin_remove(GST_BIN(gele), element->l_element)) {
-      element->l_element=NULL;
-    }
+  GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
+  gulong id=element->l_bincb_id;
+
+  if(NULL==gst_bin_get_by_name(GST_BIN(gele), gst_element_get_name(element->l_element))) {
+    /* no element of this name in our pipeline... */
+    return;
   }
 
+  if(id) {
+    if (g_signal_handler_is_connected (bus, id))
+      g_signal_handler_disconnect (bus, id);
+  } {
+    post("no buscallback-handler to remove for element %x", element);
+  }
+  gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
+
+  if(element->l_element) {
+    gst_element_set_state (element->l_element, GST_STATE_NULL); // this can halt the system, don't know why yet...
+    if(!gst_bin_remove(GST_BIN(gele), element->l_element)) {
+      error("could not remove '%s' from pipeline", element->x_gstname->s_name);
+    }
+  }
 }
-
-GstBin*pdgst_get_bin(t_pdgst_base*element)
-{
-  /* LATER: try to find the responsible [pdgst] object for the given element 
-   * and extract the bin/pipeline from there
-   */
-  return GST_BIN(s_pipeline);
-}
-
-
-
 
 /* ================================================================== */
 /* "real" pdgst object for meta-control */
@@ -163,21 +215,39 @@ static void pdgst__gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
   post("ignoring message:: __gst: %s", s->s_name);
 }
 
+
+static void pdgst__remove_all_elements(t_pdgst*x) {
+  GstIterator* it=NULL;
+  GstIteratorResult res;
+  GstElement*element;
+  it=gst_bin_iterate_elements(GST_BIN(x->x_pipeline));
+  if(NULL==it)return;
+
+  while(GST_ITERATOR_OK==(res=gst_iterator_next(it, (gpointer)&element))) {
+    gst_bin_remove(GST_BIN(x->x_pipeline), element);
+    gst_object_unref (GST_OBJECT (element)); /* since we own lmn returned by gst_iterator_next() */
+
+  }
+
+  gst_iterator_free(it);
+}
+
 /* rebuild the gst-graph */
 static void pdgst__rebuild(t_pdgst*x) {
-#if 0
+  t_atom ap[1];
+  gst_element_set_state (x->x_pipeline, GST_STATE_NULL); // this can halt the system, don't know why yet...
+  pdgst__remove_all_elements(x);
+
   pdgst__send_symbol(gensym("deregister"));
   pdgst__send_symbol(gensym("register"));
-  pdgst__send_symbol(gensym("connect"));
-#else
-  t_atom ap[1];
+
   SETSYMBOL(ap,  gensym("connect"));
   pdgst__send_(s_pdgst__gst_source, 1, ap);
-#endif
 }
 
 static void pdgst__start(t_pdgst*x) 
 {
+  pdgst__rebuild(x);
   gst_element_set_state (x->x_pipeline, GST_STATE_PLAYING);
 
 
@@ -286,6 +356,19 @@ static gboolean pdgst__bus_callback (GstBus     *bus,
   return TRUE;
 }
 
+static void pdgst__save(t_pdgst*x, t_symbol*file) {
+  /* write the bin to a file */
+  if(x->x_pipeline) {
+    FILE*f=fopen (file->s_name, "w");
+    if(f) {
+      gst_xml_write_file (GST_ELEMENT (x->x_pipeline), f);
+      fclose(f);
+    } else {
+      error("[pdgst] failed to write pipeline to '%s'", file->s_name);
+    }
+  }
+}
+
 
 static void pdgst__free(t_pdgst*x) {
   if(x->x_infout) outlet_free(x->x_infout);
@@ -304,6 +387,7 @@ static void *pdgst__new(t_symbol*s, int argc, t_atom* argv) {
   
   x->x_infout=outlet_new(&x->x_obj, 0);
 
+  /* LATER: acquire a new pipeline for each [pdgst] */
   x->x_pipeline=s_pipeline;
 
   /* set up the bus watch */
@@ -363,8 +447,6 @@ static int pdgst_loader_init(void)
   }
 
   s_pipeline=gst_pipeline_new(NULL);
-
-
   return 1;
 }
 
@@ -426,6 +508,8 @@ void pdgst_setup(void)
   class_addfloat  (pdgst_class, (t_method)pdgst__float);
   class_addmethod  (pdgst_class, (t_method)pdgst__start, gensym("start"), 0);
   class_addmethod  (pdgst_class, (t_method)pdgst__stop, gensym("stop"), 0);
+
+  class_addmethod  (pdgst_class, (t_method)pdgst__save, gensym("save"), A_SYMBOL, 0);
 
 #ifdef PDGST_CAPSFILTER
   pdgst_capsfilter_setup();

@@ -124,6 +124,11 @@ int pdgst_capsfilter_setup_class(char*classname)
 
   char dummypipeline[MAXPDSTRING];
 
+
+  
+  //  GstCaps*caps = gst_caps_new_simple (classname, NULL); //gst_caps_from_string (classname);
+
+
   return 0;
 
   /* could be a capsfilter:

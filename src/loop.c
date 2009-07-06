@@ -29,7 +29,6 @@ typedef struct _pdgst_loop
 
 static t_pdgst_loop*pdgst_loop=NULL;
 
-
 static void pdgst_loop_tick(t_pdgst_loop*x)
 {
   if(g_main_context_iteration(x->x_gcontext, FALSE)) {
@@ -37,8 +36,13 @@ static void pdgst_loop_tick(t_pdgst_loop*x)
   } else {
     //    post("gstloop: nada");
   }
-
   clock_delay(x->x_clock, 1);
+}
+
+
+void pdgst_loop_flush(void)
+{
+  pdgst_loop_tick(pdgst_loop);
 }
 
 
