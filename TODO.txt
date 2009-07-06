@@ -31,3 +31,14 @@ deleting:
         deleting objects yields an error:(<unknown>:13903): GLib-GObject-WARNING **: invalid uninstantiatable type `<invalid>' in cast to `GstObject'
                                          (<unknown>:13903): GStreamer-CRITICAL **: gst_object_unref: assertion `((GObject *) object)->ref_count > 0' failed
 
+
+
+
+specifics
+=========
+        gvalue: 
+                enumerations can currently only be set via the numeric-value; check how to deal with symbolic values
+
+        arguments:
+                arguments to the objects are not passed to the element
+
