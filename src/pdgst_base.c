@@ -259,19 +259,23 @@ static void pdgst_base__bus_callback(t_pdgst_base*x, GstMessage*message) {
   case GST_MESSAGE_ERROR: {
     GError *err;
     gchar *debug;
-    t_atom ap[2];
+    t_atom ap[4];
 
     gst_message_parse_error (message, &err, &debug);
 
     SETSYMBOL(ap+0, gensym(g_quark_to_string(err->domain)));
     SETFLOAT(ap+1, err->code);
+    SETSYMBOL(ap+2, gensym(err->message));
+    SETSYMBOL(ap+3, gensym(gst_error_get_message(err->domain, err->code)));
 
     pd_error (x, "[%s]: %s", x->x_name->s_name, err->message);
     pd_error (x, "[%s]: %s", x->x_name->s_name, debug);
+
     g_error_free (err);
     g_free (debug);
 
-    pdgst_base__infoout_mess(x, gensym("error"), 2, ap);
+    pdgst_base__infoout_mess(x, gensym("error"), 4, ap);
+
   }
     break;
 #if GST_CHECK_VERSION(0, 10, 12)
