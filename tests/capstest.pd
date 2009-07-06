@@ -2,13 +2,12 @@
 #X obj 121 114 infoprint;
 #X obj 196 82 capsfilter;
 #X obj 157 198 audio/x-raw rate=22050;
-#X obj 49 151 blub;
 #X msg 202 158 caps;
 #X msg 278 168 blus;
 #X msg 116 167 bang;
 #X obj 313 102 videotestsrc;
 #X msg 302 71 pattern 3;
+#X connect 3 0 2 0;
 #X connect 4 0 2 0;
 #X connect 5 0 2 0;
-#X connect 6 0 2 0;
-#X connect 8 0 7 0;
+#X connect 7 0 6 0;
