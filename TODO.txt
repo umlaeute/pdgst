@@ -36,9 +36,6 @@ deleting:
 
 specifics
 =========
-        gvalue: 
-                enumerations can currently only be set via the numeric-value; check how to deal with symbolic values
-
         arguments:
                 arguments to the objects are not passed to the element
 

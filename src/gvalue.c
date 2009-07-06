@@ -105,7 +105,6 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
       g_value_init (v, G_TYPE_FLOAT);
     }
   }
-  post("valuetype: %s", G_VALUE_TYPE_NAME(v));
 
   switch (G_VALUE_TYPE (v)) {
   case G_TYPE_STRING:
@@ -163,14 +162,19 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
         GEnumClass*klass = NULL; 
         int i1=0;
         GEnumValue*value=NULL;
-        post("bla:%d", __LINE__);
         klass=(GEnumClass *) g_type_class_ref (G_VALUE_TYPE (v));
-        post("bla:%d", __LINE__);
         value=g_enum_get_value_by_name(klass, s->s_name);
-        post("bla:%d\t%x", __LINE__, value);
+        if(!value)
+          value=g_enum_get_value_by_nick(klass, s->s_name);
+        if(!value) {
+          error("'%s' is not a valid %s", s->s_name, G_VALUE_TYPE_NAME(v));
+          if(v!=v0) {
+            freebytes((void*)v0, sizeof(GValue));
+          }
+          return NULL;
+        }
+
         i1=value->value;
-        post("bla:%d", __LINE__);
-        post("%s -> %d", s->s_name, i1);
         g_value_set_enum(v, i1);
       } else {
         g_value_set_enum(v, i);
@@ -178,7 +182,8 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
       break;
     } else {
       /* no enum class */
-      post("ignoring atom: "); postatom(1, a); endpost();
+      error("pdgst atom converter failed");
+      startpost("cannot convert to '%s':", G_VALUE_TYPE_NAME(v)); postatom(1, (t_atom*)a); endpost();
     }
 
     if(v!=v0) {
