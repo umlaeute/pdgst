@@ -1,0 +1,19 @@
+#N canvas 497 75 450 346 10;
+#X msg 60 165 \; pd dsp 1;
+#X obj 66 88 pdgst;
+#X obj 69 66 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1 1
+;
+#X obj 203 209 infoprint dac~;
+#X obj 209 278 infoprint sink;
+#X obj 205 248 alsasink;
+#X obj 202 183 pdgst_dac~;
+#X obj 207 132 osc~ 440;
+#X obj 235 155 *~ 6;
+#X obj 277 97 noise~;
+#X connect 2 0 1 0;
+#X connect 3 0 5 0;
+#X connect 5 0 4 0;
+#X connect 6 0 3 0;
+#X connect 7 0 8 0;
+#X connect 8 0 6 0;
+#X connect 9 0 6 1;

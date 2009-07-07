@@ -429,6 +429,7 @@ void pdgst_poplocale(void)
 }
 
 
+/* LATER move this into setup.c */
 void pdgst_setup(void)
 {
   char*locale=NULL;
@@ -476,7 +477,7 @@ void pdgst_setup(void)
 #ifdef PDGST_CAPSFILTER
   pdgst_capsfilter_setup();
 #endif
-
+  pdgst_objects_setup();
 }
 
 t_symbol*pdgst_privatesymbol(void) {

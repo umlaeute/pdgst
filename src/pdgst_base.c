@@ -702,9 +702,6 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   x->l_sighandler_pad_done=0;
 
 
-  pdgst_bin_add(x);
-  pdgst_base__add_signals(x);
-
   pd_bind(&x->l_obj.ob_pd, s_pdgst__gst);
   if((lmn->numsrcpads > 0) && (lmn->numsinkpads > 0)) {
     pd_bind(&x->l_obj.ob_pd, s_pdgst__gst_filter);
@@ -718,6 +715,10 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
 
   pd_bind(&x->l_obj.ob_pd, pdgst_base__bindsym(x));
 
+
+
+  pdgst_bin_add(x);
+  pdgst_base__add_signals(x);
 }
 
 /* stupid hack: we create a special symbol based on the object's address and bind the object to it
