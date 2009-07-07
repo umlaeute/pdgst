@@ -51,6 +51,9 @@ void pdgst_base__gstMess (t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv);
 void pdgst_base__setParam(t_pdgst_base*x, t_pdgst_property*prop, t_atom*ap);
 void pdgst_base__getParam(t_pdgst_base*x, t_pdgst_property*prop);
 void pdgst_base__infoMess (t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv); /* hack to ignore "_info" */
+
+void pdgst_base__buscallback(GstBus*bus,GstMessage*msg,t_pdgst_base*x);
+
 /* constructor/destructor */
 void pdgst_base__free(t_pdgst_base*x);
 void pdgst_base__new (t_pdgst_base*x, t_symbol*s);

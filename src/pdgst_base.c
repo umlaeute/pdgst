@@ -42,8 +42,8 @@ static void pdgst_base__gstout(t_pdgst_base*x, int argc, t_atom*argv)
     outlet_anything(x->x_gstout, s_pdgst__gst, argc, argv);
   } else {
     if(x && x->x_gstname) {
-      pd_error(x, "[%s] ", x->x_gstname->s_name);
-    } else error("pdgst: ");
+      pd_error(x, "gstout: [%s] ", x->x_gstname->s_name);
+    } else error("pdgstout: ");
     postatom(argc, argv);
     endpost();
   }
@@ -248,7 +248,7 @@ static void pdgst_base__taglist_foreach(const GstTagList *list, const gchar *tag
 
 #define CALLBACK_UNIMPLEMENTED(x)  pd_error(x, "[%s] unimplemented message in %s:%d", x->x_gstname->s_name, __FILE__, __LINE__);
 
-static void pdgst_base__bus_callback(t_pdgst_base*x, GstMessage*message) {
+static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
   switch (GST_MESSAGE_TYPE (message)) {
   case GST_MESSAGE_UNKNOWN:
     post("unknown message");
@@ -500,19 +500,91 @@ static void pdgst_base__bus_callback(t_pdgst_base*x, GstMessage*message) {
   }
 }
 
+
+/* LATER: move this into pdgst_base */
+void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
+  GstElement*src=NULL;
+  post("buscallback %x %x %x", bus, msg, x);
+  if(NULL==x) {
+    verbose(1, "NULL object passed to gst-buscallback");
+    return;
+  }
+
+  if(NULL==x->x_name  || NULL==x->x_name->s_name) {
+    verbose(1, "unnamed object %x passed to gst-buscallback", x);
+    return;
+  }
+
+  if(!G_IS_OBJECT(x->l_element)) {
+    error("invalid gst-object %x of object %x", x->l_element, x);
+    return;
+  }
+
+
+#if 1
+  post("lmn-bus: %x %x %x", bus, msg, x);
+  post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
+
+  startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
+#endif
+
+
+
+  post("pdgst__element_buscallback: %d", __LINE__);
+  if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
+    src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
+  post("pdgst__element_buscallback: %d", __LINE__);
+  if(!src) {
+    error("fixme: gst-busmessage without source");
+    return;
+  }
+  // post("pdgst__element_buscallback: %d", __LINE__);
+#if 1
+  if(1) {
+    gchar *name0=NULL, *name1=NULL;
+    g_object_get (G_OBJECT (src), "name", &name0, NULL);
+    //startpost("x->element[%x]=", x->l_element);
+    g_object_get (G_OBJECT (x->l_element), "name", &name1, NULL);
+    //post("%s", name1);  post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
+    g_free (name0);
+    g_free (name1);
+  }
+#endif
+  post("pdgst__element_buscallback: %d", __LINE__);
+  if(src==x->l_element) {
+    post("pdgst__element_buscallback: %d", __LINE__);
+    pdgst_base__busmsg(x, msg);
+  } else {
+    post("pdgst__element_buscallback: %d", __LINE__);
+    // hmm, this is a message originating from somebody else
+    // how should we do that?
+    // LATER make x aware that this is from somebody else...
+    // OR shall we output this in the pdgst object??
+    //    if(src==s_pipeline) {
+    if((GstElement*)(pdgst_get_bin(NULL))==src) {
+      post("message from source");
+      pdgst_base__busmsg(x, msg);
+    }
+  }
+  post("buscallback done");
+}
+
+
+
+
 static void pdgst_base__padcb_added (GstElement *element, GstPad     *pad, t_pdgst_base*x)
 {
   switch (gst_pad_get_direction(pad)) {
- case GST_PAD_SRC: {
+  case GST_PAD_SRC: {
     t_atom ap[2];
     gchar*name=gst_pad_get_name(pad);
     SETSYMBOL(ap+0, x->x_gstname);
     SETSYMBOL(ap+1, gensym(name));
     g_free(name);
-
+    
     pdgst_base__gstout_mess(x, gensym("connect"), 2, ap);  
- }
-   break;
+  }
+    break;
   case GST_PAD_SINK:
     break;
   default:
@@ -521,22 +593,24 @@ static void pdgst_base__padcb_added (GstElement *element, GstPad     *pad, t_pdg
 }
 static void pdgst_base__padcb_removed (GstElement *element, GstPad     *pad, t_pdgst_base*x)
 {
-  switch (gst_pad_get_direction(pad)) {
- case GST_PAD_SRC: {
-  t_atom ap[2];
-  gchar*name=gst_pad_get_name(pad);
-  SETSYMBOL(ap+0, x->x_gstname);
-  SETSYMBOL(ap+1, gensym(name));
-  g_free(name);
+  post("padcb_removal{ %x %x", x, element);
 
-  pdgst_base__gstout_mess(x, gensym("disconnect"), 2, ap);  
- }
-   break;
+  switch (gst_pad_get_direction(pad)) {
+  case GST_PAD_SRC: {
+    t_atom ap[2];
+    gchar*name=gst_pad_get_name(pad);
+    SETSYMBOL(ap+0, x->x_gstname);
+    SETSYMBOL(ap+1, gensym(name));
+    g_free(name);
+    pdgst_base__gstout_mess(x, gensym("disconnect"), 2, ap);  
+  }
+    break;
   case GST_PAD_SINK:
     break;
   default:
     pd_error(x, "[%s] removed pad with unknown direction...");
   }
+  post("}padcb_removed");
 }
 static void pdgst_base__padcb_nomore(GstElement *element, t_pdgst_base*x)
 {
@@ -544,10 +618,14 @@ static void pdgst_base__padcb_nomore(GstElement *element, t_pdgst_base*x)
 }
 
 static void pdgst_base__add_signals(t_pdgst_base*x) {
+#if 0
   g_signal_connect (x->l_element, "pad-added", G_CALLBACK(pdgst_base__padcb_added), x);
   g_signal_connect (x->l_element, "pad-removed", G_CALLBACK(pdgst_base__padcb_removed), x);
   g_signal_connect (x->l_element, "no-more-pads", G_CALLBACK(pdgst_base__padcb_nomore), x);
   //  LATER also remove signals(?)
+#else
+#warning padcb signals
+#endif
 }
 
 
@@ -555,7 +633,7 @@ static void pdgst_base__add_signals(t_pdgst_base*x) {
 void pdgst_base__free(t_pdgst_base*x)
 {
   GstElement*lmn=x->l_element;
-  post("freeing object %x", x);
+  post("pdgst_base_free: %x", x);
   /* cleanup the Pd-part */
   pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst);
   if(lmn->numsrcpads && lmn->numsinkpads) {
@@ -565,21 +643,16 @@ void pdgst_base__free(t_pdgst_base*x)
   } else if (lmn->numsrcpads) {
     pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_sink);
   }  
-  x->l_busCallback=NULL;
 
   /* cleanup the gstreamer part */
-  post("pdgst_base_free: %d", __LINE__);
   pdgst_base__deregister(x);
-  post("pdgst_base_free: %d", __LINE__);
   gst_element_get_state(x->l_element, NULL, NULL, GST_CLOCK_TIME_NONE );
   pdgst_loop_flush();
-  post("pdgst_base_free: %d", __LINE__);
-
 
   gst_object_unref (x->l_element);
+
+
   x->l_element=NULL;
-
-
   x->x_name=NULL;
 
   /* final cleanup of Pd */
@@ -590,6 +663,8 @@ void pdgst_base__free(t_pdgst_base*x)
   if(x->x_infout)
     outlet_free(x->x_infout);
   x->x_infout=NULL;
+
+  post("pdgst_base_freed: %x", x);
 }
 
 
@@ -600,8 +675,8 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   GstElement*lmn=gst_element_factory_make(s->s_name, NULL);
   x->l_element=lmn;
   gst_object_ref (x->l_element);
+  gst_object_sink(x->l_element);
 
-  post("pdgst[%x]=%s", lmn, s->s_name);
   if(NULL==lmn) return;
 
   x->x_infout=outlet_new(&x->l_obj, 0);
@@ -614,11 +689,11 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   x->x_gstname=gensym(name);
   g_free (name);
 
-  x->l_busCallback=(t_method)pdgst_base__bus_callback;
   x->l_bincb_id=0;
 
   pdgst_bin_add(x);
   pdgst_base__add_signals(x);
+
   pd_bind(&x->l_obj.ob_pd, s_pdgst__gst);
   if((lmn->numsrcpads > 0) && (lmn->numsinkpads > 0)) {
     pd_bind(&x->l_obj.ob_pd, s_pdgst__gst_filter);
@@ -630,3 +705,4 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
     pd_error(x, "[%s]: hmm, element without pads", x->x_name->s_name);
   }
 }
+

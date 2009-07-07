@@ -69,79 +69,6 @@ static void pdgst__send_symbol(t_symbol*s)
   pdgst__send(1, ap);
 }
 
-
-void pdgst__element_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
-  t_method cb=NULL;
-  GstElement*src=NULL;
-
-  if(NULL==x) {
-    verbose(1, "NULL object passed to gst-buscallback");
-    return;
-  }
-
-  if(NULL==x->x_name  || NULL==x->x_name->s_name) {
-    verbose(1, "unnamed object %x passed to gst-buscallback", x);
-    return;
-  }
-
-  cb=x->l_busCallback;
-  if(NULL==cb) {
-    verbose(1, "no gst-buscallback available for object %x", x);
-    return;
-  }
-
-  if(!G_IS_OBJECT(x->l_element)) {
-    error("invalid gst-object %x of object %x", x->l_element, x);
-    return;
-  }
-
-
-#if 1
-  post("lmn-buscb: %x %x %x \t%x", bus, msg, x, cb);
-  post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
-
-  startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
-#endif
-
-
-
-  post("pdgst__element_buscallback: %d", __LINE__);
-  if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
-    src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
-  post("pdgst__element_buscallback: %d", __LINE__);
-  if(!src) {
-    error("fixme: gst-busmessage without source");
-    return;
-  }
-  // post("pdgst__element_buscallback: %d", __LINE__);
-#if 1
-  if(1) {
-    gchar *name0=NULL, *name1=NULL;
-    g_object_get (G_OBJECT (src), "name", &name0, NULL);
-    //startpost("x->element[%x]=", x->l_element);
-    g_object_get (G_OBJECT (x->l_element), "name", &name1, NULL);
-    //post("%s", name1);  post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
-    g_free (name0);
-    g_free (name1);
-  }
-#endif
-  post("pdgst__element_buscallback: %d", __LINE__);
-  if(src==x->l_element) {
-    //post("pdgst__element_buscallback: %d", __LINE__);
-    (*(t_gotfn)(*cb))(x, msg);
-  } else {
-    //post("pdgst__element_buscallback: %d", __LINE__);
-    // hmm, this is a message originating from somebody else
-    // how should we do that?
-    // LATER make x aware that this is from somebody else...
-    // OR shall we output this in the pdgst object??
-    if(src==s_pipeline) {
-      (*(t_gotfn)(*cb))(x, msg);
-    }
-  }
-  post("buscallback done");
-}
-
 static GstElement*pdgst__getcontainer(t_pdgst_base*element)
 {
   /* LATER: try to find the responsible [pdgst] object for the given element 
@@ -158,6 +85,9 @@ GstBin*pdgst_get_bin(t_pdgst_base*element)
   return GST_BIN(pdgst__getcontainer(element));
 }
 
+static void pdgst_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
+  post("buscallback %x", x);
+}
 
 void pdgst_bin_add(t_pdgst_base*element)
 {
@@ -166,16 +96,30 @@ void pdgst_bin_add(t_pdgst_base*element)
   GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
   gulong handler=0;
 
-  if(NULL!=gst_bin_get_by_name(GST_BIN(gele), gst_element_get_name(element->l_element))) {
+  gchar*name=gst_element_get_name(element->l_element);
+  GstElement*lmn=gst_bin_get_by_name(GST_BIN(gele), name);
+  g_free(name);
+
+  post("bin adding element %x [%x]", element, element->l_element);
+
+  if(NULL!=lmn) {
     /* hey, this has already been added to our pipeline... */
+    gst_object_unref (lmn); /* since we own bus returned by gst_bin_get_by_name() */
     return;
   }
 
   if(gst_bin_add(GST_BIN(gele), element->l_element)) {
   } else {
-    post("could not add element %s", element->x_name->s_name);
+    post("could not add element '%s' [%x] to bus", element->x_name->s_name, element);
+    return;
   }
-  handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst__element_buscallback), element);
+#if 0
+  /* just a fake callback */
+  handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst_buscallback), element);
+#else
+  handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst_base__buscallback), element);
+#endif
+  post("bin added %x [%x] to bus %x: %d", element, element->l_element, bus, handler);
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 
   element->l_bincb_id=handler;
@@ -189,26 +133,36 @@ void pdgst_bin_remove(t_pdgst_base*element)
   GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
   gulong id=element->l_bincb_id;
 
-  if(NULL==gst_bin_get_by_name(GST_BIN(gele), gst_element_get_name(element->l_element))) {
+  gchar*name=gst_element_get_name(element->l_element);
+  GstElement*lmn=gst_bin_get_by_name(GST_BIN(gele), name);
+  g_free(name);
+
+  if(NULL==lmn) {
     /* no element of this name in our pipeline... */
+    post("element %x not in bin", element);
     return;
   }
+  gst_object_unref (lmn); /* since we own bus returned by gst_bin_get_by_name() */
 
   if(id) {
-    if (g_signal_handler_is_connected (bus, id))
+    startpost("removing buscallback-handler %d for %x: ", id, element);
+    if (g_signal_handler_is_connected (bus, id)) {
       g_signal_handler_disconnect (bus, id);
+      post("ok");
+    } else post("ko");
     element->l_bincb_id=0;
-  } {
+  } else {
     post("no buscallback-handler to remove for element %x", element);
   }
+  gst_bus_set_flushing(bus, TRUE) ;
+
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 
-  if(element->l_element) {
-    gst_element_set_state (element->l_element, GST_STATE_NULL); // this can halt the system, don't know why yet...
-    if(!gst_bin_remove(GST_BIN(gele), element->l_element)) {
-      error("could not remove '%s' from pipeline", element->x_gstname->s_name);
-    }
+  GstStateChangeReturn ret=gst_element_set_state (element->l_element, GST_STATE_NULL); // this can halt the system, don't know why yet...
+  if(!gst_bin_remove(GST_BIN(gele), element->l_element)) {
+    error("could not remove '%s' from pipeline", element->x_gstname->s_name);
   }
+  gst_bus_set_flushing(bus, FALSE) ;
 }
 
 /* ================================================================== */
