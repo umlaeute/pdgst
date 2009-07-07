@@ -127,7 +127,7 @@ void pdgst_bin_add(t_pdgst_base*element)
   post("bin added %x [%x] to bus %x: %d", element, element->l_element, bus, handler);
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 
-  element->l_bincb_id=handler;
+  element->l_sighandler_bin=handler;
 }
 
 void pdgst_bin_remove(t_pdgst_base*element)
@@ -136,7 +136,7 @@ void pdgst_bin_remove(t_pdgst_base*element)
   GstElement*gele=pdgst__getcontainer(element);
 
   GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
-  gulong id=element->l_bincb_id;
+  gulong id=element->l_sighandler_bin;
 
   gchar*name=gst_element_get_name(element->l_element);
   GstElement*lmn=gst_bin_get_by_name(GST_BIN(gele), name);
@@ -155,7 +155,7 @@ void pdgst_bin_remove(t_pdgst_base*element)
       g_signal_handler_disconnect (bus, id);
       post("ok");
     } else post("ko");
-    element->l_bincb_id=0;
+    element->l_sighandler_bin=0;
   } else {
     post("no buscallback-handler to remove for element %x", element);
   }

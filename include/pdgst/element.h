@@ -36,7 +36,10 @@ typedef struct _pdgst_base
   t_canvas  *l_canvas;
   GstElement*l_element;
 
-  gulong   l_bincb_id; /* bus callback for bin */
+  gulong   l_sighandler_bin; /* bus callback for bin */
+  gulong   l_sighandler_pad_add;  /* pad-added */
+  gulong   l_sighandler_pad_del;  /* pad-removed */
+  gulong   l_sighandler_pad_done; /* pad-nomore */
 
   t_outlet*x_infout;
   t_outlet*x_gstout;

@@ -504,7 +504,7 @@ static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
 /* LATER: move this into pdgst_base */
 void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
   GstElement*src=NULL;
-  post("buscallback %x %x %x", bus, msg, x);
+  //  post("buscallback %x %x %x", bus, msg, x);
   if(NULL==x) {
     verbose(1, "NULL object passed to gst-buscallback");
     return;
@@ -520,16 +520,16 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
     return;
   }
 
-#if 1
+#if 0
   post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
 
   startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
 #endif
 
-  post("pdgst__element_buscallback: %d", __LINE__);
+  //  post("pdgst__element_buscallback: %d", __LINE__);
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
     src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
-  post("pdgst__element_buscallback: %d", __LINE__);
+  //post("pdgst__element_buscallback: %d", __LINE__);
   if(!src) {
     error("fixme: gst-busmessage without source");
     return;
@@ -546,12 +546,12 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
     g_free (name1);
   }
 #endif
-  post("pdgst__element_buscallback: %d", __LINE__);
+  //  post("pdgst__element_buscallback: %d", __LINE__);
   if(src==x->l_element) {
-    post("pdgst__element_buscallback: %d", __LINE__);
+    //    post("pdgst__element_buscallback: %d", __LINE__);
     pdgst_base__busmsg(x, msg);
   } else {
-    post("pdgst__element_buscallback: %d", __LINE__);
+    //    post("pdgst__element_buscallback: %d", __LINE__);
     // hmm, this is a message originating from somebody else
     // how should we do that?
     // LATER make x aware that this is from somebody else...
@@ -562,7 +562,7 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
       pdgst_base__busmsg(x, msg);
     }
   }
-  post("buscallback done");
+  //  post("buscallback done");
 }
 
 
@@ -614,14 +614,23 @@ static void pdgst_base__padcb_nomore(GstElement *element, t_pdgst_base*x)
 }
 
 static void pdgst_base__add_signals(t_pdgst_base*x) {
-#if 0
-  g_signal_connect (x->l_element, "pad-added", G_CALLBACK(pdgst_base__padcb_added), x);
-  g_signal_connect (x->l_element, "pad-removed", G_CALLBACK(pdgst_base__padcb_removed), x);
-  g_signal_connect (x->l_element, "no-more-pads", G_CALLBACK(pdgst_base__padcb_nomore), x);
-  //  LATER also remove signals(?)
-#else
-#warning padcb signals
-#endif
+  x->l_sighandler_pad_add =g_signal_connect (x->l_element, "pad-added", G_CALLBACK(pdgst_base__padcb_added), x);
+  x->l_sighandler_pad_del =g_signal_connect (x->l_element, "pad-removed", G_CALLBACK(pdgst_base__padcb_removed), x);
+  x->l_sighandler_pad_done=g_signal_connect (x->l_element, "no-more-pads", G_CALLBACK(pdgst_base__padcb_nomore), x);
+}
+
+static void pdgst_base__disconnect_signal(GstElement*x, gulong handler) {
+  if(!x || !handler)return;
+  if (g_signal_handler_is_connected (x, handler)) {
+    g_signal_handler_disconnect (x, handler);
+  }
+}
+
+static void pdgst_base__del_signals(t_pdgst_base*x) {
+  if(NULL==x || NULL==x->l_element)return;
+  pdgst_base__disconnect_signal(x->l_element, x->l_sighandler_pad_add);
+  pdgst_base__disconnect_signal(x->l_element, x->l_sighandler_pad_del);
+  pdgst_base__disconnect_signal(x->l_element, x->l_sighandler_pad_done);
 }
 
 
@@ -640,6 +649,8 @@ void pdgst_base__free(t_pdgst_base*x)
     pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_sink);
   }
   pd_unbind(&x->l_obj.ob_pd, pdgst_base__bindsym(x));
+
+  pdgst_base__del_signals(x);
 
   /* cleanup the gstreamer part */
   pdgst_base__deregister(x);
@@ -685,7 +696,11 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   x->x_gstname=gensym(name);
   g_free (name);
 
-  x->l_bincb_id=0;
+  x->l_sighandler_bin=0;
+  x->l_sighandler_pad_add =0;
+  x->l_sighandler_pad_del =0;
+  x->l_sighandler_pad_done=0;
+
 
   pdgst_bin_add(x);
   pdgst_base__add_signals(x);

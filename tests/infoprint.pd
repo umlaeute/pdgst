@@ -13,6 +13,7 @@
 #X obj 341 191 spigot 1;
 #X obj 270 33 t a a;
 #X obj 213 83 route state property state_changed;
+#X obj 369 50 inlet;
 #X connect 0 0 11 0;
 #X connect 5 0 4 0;
 #X connect 6 0 10 1;
@@ -26,4 +27,5 @@
 #X connect 12 1 8 0;
 #X connect 12 2 5 0;
 #X connect 12 3 2 0;
+#X connect 13 0 6 0;
 #X coords 0 -1 1 1 85 30 1 100 100;
