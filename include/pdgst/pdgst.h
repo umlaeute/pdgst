@@ -97,4 +97,7 @@ extern t_symbol*s_pdgst__gst_source;
 extern t_symbol*s_pdgst__gst_filter;
 extern t_symbol*s_pdgst__gst_sink;
 
+/* objectclasses setup */
+void pdgst_objects_setup(void);
+
 #endif /* INCLUDE_PDGST_H__ */
