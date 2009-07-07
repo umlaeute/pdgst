@@ -520,15 +520,11 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
     return;
   }
 
-
 #if 1
-  post("lmn-bus: %x %x %x", bus, msg, x);
   post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
 
   startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
 #endif
-
-
 
   post("pdgst__element_buscallback: %d", __LINE__);
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(msg)))
@@ -538,14 +534,14 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
     error("fixme: gst-busmessage without source");
     return;
   }
-  // post("pdgst__element_buscallback: %d", __LINE__);
-#if 1
+
+#if 0
   if(1) {
     gchar *name0=NULL, *name1=NULL;
     g_object_get (G_OBJECT (src), "name", &name0, NULL);
-    //startpost("x->element[%x]=", x->l_element);
+    startpost("x->element[%x]=", x->l_element);
     g_object_get (G_OBJECT (x->l_element), "name", &name1, NULL);
-    //post("%s", name1);  post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
+    post("%s", name1);  post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
     g_free (name0);
     g_free (name1);
   }
@@ -642,7 +638,8 @@ void pdgst_base__free(t_pdgst_base*x)
     pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_source);
   } else if (lmn->numsrcpads) {
     pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_sink);
-  }  
+  }
+  pd_unbind(&x->l_obj.ob_pd, pdgst_base__bindsym(x));
 
   /* cleanup the gstreamer part */
   pdgst_base__deregister(x);
@@ -650,7 +647,6 @@ void pdgst_base__free(t_pdgst_base*x)
   pdgst_loop_flush();
 
   gst_object_unref (x->l_element);
-
 
   x->l_element=NULL;
   x->x_name=NULL;
@@ -704,5 +700,17 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   } else {
     pd_error(x, "[%s]: hmm, element without pads", x->x_name->s_name);
   }
+
+  pd_bind(&x->l_obj.ob_pd, pdgst_base__bindsym(x));
+
 }
 
+/* stupid hack: we create a special symbol based on the object's address and bind the object to it
+ * now if someone wants to send a message directly to the object, we can just check whether the address is bound to a valid object
+ */
+t_symbol*pdgst_base__bindsym(t_pdgst_base*x) {
+  char bindname[MAXPDSTRING];
+  snprintf(bindname, MAXPDSTRING, "__gst__0x%x ", x);
+  bindname[MAXPDSTRING-1]=0;
+  return gensym(bindname);
+}

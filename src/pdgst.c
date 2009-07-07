@@ -86,7 +86,17 @@ GstBin*pdgst_get_bin(t_pdgst_base*element)
 }
 
 static void pdgst_buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
-  post("buscallback %x", x);
+  //  post("buscallback %x", x);
+  /* do some checks whether x is still valid
+   * e.g. check whether there is an <x> bound to "__gst"
+   */
+  //...
+  t_symbol*s=pdgst_base__bindsym(x);
+  if(s->s_thing) {
+
+    /* if all goes well, we call back the element */
+    pdgst_base__buscallback(bus, msg, x);
+  }
 }
 
 void pdgst_bin_add(t_pdgst_base*element)
@@ -113,12 +123,7 @@ void pdgst_bin_add(t_pdgst_base*element)
     post("could not add element '%s' [%x] to bus", element->x_name->s_name, element);
     return;
   }
-#if 0
-  /* just a fake callback */
   handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst_buscallback), element);
-#else
-  handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst_base__buscallback), element);
-#endif
   post("bin added %x [%x] to bus %x: %d", element, element->l_element, bus, handler);
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 

@@ -35,7 +35,6 @@ typedef struct _pdgst_base
   t_object l_obj;
   t_canvas  *l_canvas;
   GstElement*l_element;
-  t_method l_busCallback;
 
   gulong   l_bincb_id; /* bus callback for bin */
 
@@ -45,6 +44,8 @@ typedef struct _pdgst_base
   t_symbol*x_name;
   t_symbol*x_gstname;
 } t_pdgst_base;
+
+t_symbol*pdgst_base__bindsym(t_pdgst_base*x);
 
 /* messages */
 void pdgst_base__gstMess (t_pdgst_base*x, t_symbol*s, int argc, t_atom*argv);
