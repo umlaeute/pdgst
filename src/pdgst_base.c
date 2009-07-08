@@ -558,7 +558,7 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
     // OR shall we output this in the pdgst object??
     //    if(src==s_pipeline) {
     if((GstElement*)(pdgst_get_bin(NULL))==src) {
-      post("message from source");
+      //      post("message without source");
       pdgst_base__busmsg(x, msg);
     }
   }

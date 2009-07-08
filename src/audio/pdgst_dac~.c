@@ -32,7 +32,6 @@ typedef struct _pdgst_dac
   int x_channels; /* #channels */
   t_sample x_f; /* should this be t_sample or t_float? */
 
-
   t_pdgst_property*x_props;
 } t_pdgst_dac;
 
@@ -70,7 +69,20 @@ static t_int*pdgst_dac_perform(t_int*w){
   }
 #endif
 
-  gst_app_src_push_buffer(src,buf);
+  GstFlowReturn ret= gst_app_src_push_buffer(src,buf);
+
+  switch(ret) {
+  case GST_FLOW_OK: break;
+  case GST_FLOW_WRONG_STATE:
+    pd_error(x, "dsp in wrong state");
+    break;
+  case GST_FLOW_UNEXPECTED:
+    pd_error(x, "dsp met EOS");
+    break;
+  default:
+    pd_error(x, "push returned %d", ret);
+  }
+
   return (w+offset+1+i);
 }
 
@@ -88,6 +100,20 @@ static void pdgst_dac_dsp(t_pdgst_dac *x, t_signal **sp){
 
   dsp_addv(pdgst_dac_perform, x->x_channels + 3, (t_int*)myvec);
   freebytes(myvec,sizeof(t_int)*(x->x_channels + 3));
+}
+
+static void pdgst_dac__setprop(t_pdgst_dac*x, t_symbol*s, t_float value) {
+  t_atom a;
+  t_pdgst_property*prop=pdgst_getproperty(x->x_props, s);
+  if(NULL==prop)return;
+  SETFLOAT(&a, value);
+  pdgst_base__setParam(&x->x_elem, prop, &a);
+  /*
+  pdgst_getproperty(x->x_props, gensym("is-live"));  SETFLOAT(&a, 1);  pdgst_base__setParam(&x->x_elem, prop, &a);
+  pdgst_getproperty(x->x_props, gensym("stream-type"));  SETSYMBOL(&a, gensym("stream"));  pdgst_base__setParam(&x->x_elem, prop, &a);
+  pdgst_getproperty(x->x_props, gensym("min-latency"));  SETFLOAT(&a, 0);  pdgst_base__setParam(&x->x_elem, prop, &a);
+  pdgst_getproperty(x->x_props, gensym("max-latency"));  SETFLOAT(&a, 0);  pdgst_base__setParam(&x->x_elem, prop, &a);
+  */
 }
 
 
@@ -116,10 +142,21 @@ static void pdgst_dac_any(t_pdgst_dac*x, t_symbol*s, int argc, t_atom*argv) {
     }
   }
 }
-
-
-
-
+#if 0
+static void pdgst_dac__need_data    (GstAppSrc *src, guint length, gpointer user_data){
+  t_pdgst_dac*x=(t_pdgst_dac*)user_data;
+  post("pdgst_dac~: need_data");
+}
+static void pdgst_dac__enough_data  (GstAppSrc *src, gpointer user_data){
+  t_pdgst_dac*x=(t_pdgst_dac*)user_data;
+  //  post("pdgst_dac~: enough_data");
+}
+static gboolean pdgst_dac__seek_data(GstAppSrc *src, guint64 offset, gpointer user_data){
+  t_pdgst_dac*x=(t_pdgst_dac*)user_data;
+  post("pdgst_dac~: seek_data");
+  return FALSE;
+}
+#endif
 
 static void pdgst_dac_free(t_pdgst_dac*x) {
 }
@@ -170,9 +207,16 @@ static void*pdgst_dac_new(t_floatarg f) {
   }
   g_free (property_specs);
 
-
-
-
+#if 0
+  GstAppSrcCallbacks callbacks;
+  callbacks.need_data=pdgst_dac__need_data;
+  callbacks.enough_data=pdgst_dac__enough_data;
+  callbacks.seek_data=pdgst_dac__seek_data;
+  gst_app_src_set_callbacks           (GST_APP_SRC(x->x_element),
+                                       &callbacks,
+                                       x,
+                                       NULL);
+#endif
   pdgst_poplocale();
   return x;
 }

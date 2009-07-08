@@ -66,11 +66,13 @@ void pdgst_setup(void)
 
   pdgst_pushlocale();
   err=pdgst_loader_init();
-  if(err)pdgst_loop_setup();
+  //  g_set_application_name ("pdgst");
+  g_set_prgname ("pdgst");
+  if(err){
+    pdgst_loop_setup();
+    pdgst_objects_setup();
+  }
   pdgst_poplocale();
-  if(!err)return;
-
-  pdgst_objects_setup();
 }
 
 t_symbol*pdgst_privatesymbol(void) {
