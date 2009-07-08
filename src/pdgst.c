@@ -32,13 +32,6 @@
 # undef x_obj
 #endif
 
-t_symbol*s_pdgst__gst=NULL;
-t_symbol*s_pdgst__gst_source=NULL;
-t_symbol*s_pdgst__gst_filter=NULL;
-t_symbol*s_pdgst__gst_sink=NULL;
-
-
-
 #define PDGST_CAPSFILTER
 
 static GstElement *s_pipeline=NULL;
@@ -381,7 +374,7 @@ static int pdgst_loader(t_canvas *canvas, char *classname)
   return (0);
 }
 
-static int pdgst_loader_init(void)
+int pdgst_loader_init(void)
 {
   GError *err = NULL;
   guint major=0, minor=0, micro=0, nano=0;
@@ -409,6 +402,8 @@ static int pdgst_loader_init(void)
   }
 
   s_pipeline=gst_pipeline_new(NULL);
+
+  sys_register_loader(pdgst_loader);
   return 1;
 }
 
@@ -429,37 +424,8 @@ void pdgst_poplocale(void)
 }
 
 
-/* LATER move this into setup.c */
-void pdgst_setup(void)
+void pdgst__setup(void)
 {
-  char*locale=NULL;
-  int err=0;
-
-  if(!s_pdgst__gst) {
-    const char*_gst_="__gst";
-    char buf[MAXPDSTRING];
-    s_pdgst__gst=gensym(_gst_);;
-    snprintf(buf, MAXPDSTRING-1, "%s_source", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_source=gensym(buf);
-    snprintf(buf, MAXPDSTRING-1, "%s_filter", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_filter=gensym(buf);
-    snprintf(buf, MAXPDSTRING-1, "%s_sink", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_sink=gensym(buf);
-  }
-
-  post("pdgst %s",pdgst_version);  
-  post("\t(copyleft) IOhannes m zmoelnig @ IEM / KUG");
-  post("\tcompiled on "__DATE__" at "__TIME__ " ");
-  post("\tcompiled against Pd version %d.%d.%d.%s", PD_MAJOR_VERSION, PD_MINOR_VERSION, PD_BUGFIX_VERSION, PD_TEST_VERSION);
-
-  pdgst_pushlocale();
-  err=pdgst_loader_init();
-  if(err)pdgst_loop_setup();
-  pdgst_poplocale();
-  if(!err)return;
-
-  sys_register_loader(pdgst_loader);
-
   pdgst_class=class_new(gensym("pdgst"), 
                         (t_newmethod)pdgst__new,
                         (t_method)pdgst__free,
@@ -474,19 +440,4 @@ void pdgst_setup(void)
 
   class_addmethod  (pdgst_class, (t_method)pdgst__save, gensym("save"), A_SYMBOL, 0);
 
-#ifdef PDGST_CAPSFILTER
-  pdgst_capsfilter_setup();
-#endif
-  pdgst_objects_setup();
 }
-
-t_symbol*pdgst_privatesymbol(void) {
- return gensym("__gst");
-}
-
-
-
-/*
- * interesting stuff:
-   gst_update_registry (void);
-*/
