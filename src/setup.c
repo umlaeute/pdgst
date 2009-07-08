@@ -40,6 +40,7 @@ void pdgst_objects_setup(void){
 
 
   pdgst_dac_tilde_setup();
+  pdgst_adc_tilde_setup();
 }
 
 void pdgst_setup(void)
