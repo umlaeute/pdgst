@@ -589,7 +589,7 @@ static void pdgst_base__padcb_added (GstElement *element, GstPad     *pad, t_pdg
 }
 static void pdgst_base__padcb_removed (GstElement *element, GstPad     *pad, t_pdgst_base*x)
 {
-  post("padcb_removal{ %x %x", x, element);
+  //  post("padcb_removal{ %x %x", x, element);
 
   switch (gst_pad_get_direction(pad)) {
   case GST_PAD_SRC: {
@@ -606,7 +606,7 @@ static void pdgst_base__padcb_removed (GstElement *element, GstPad     *pad, t_p
   default:
     pd_error(x, "[%s] removed pad with unknown direction...");
   }
-  post("}padcb_removed");
+  //  post("}padcb_removed");
 }
 static void pdgst_base__padcb_nomore(GstElement *element, t_pdgst_base*x)
 {
@@ -638,7 +638,7 @@ static void pdgst_base__del_signals(t_pdgst_base*x) {
 void pdgst_base__free(t_pdgst_base*x)
 {
   GstElement*lmn=x->l_element;
-  post("pdgst_base_free: %x", x);
+  //  post("pdgst_base_free: %x", x);
   /* cleanup the Pd-part */
   pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst);
   if(lmn->numsrcpads && lmn->numsinkpads) {
@@ -671,7 +671,7 @@ void pdgst_base__free(t_pdgst_base*x)
     outlet_free(x->x_infout);
   x->x_infout=NULL;
 
-  post("pdgst_base_freed: %x", x);
+  //  post("pdgst_base_freed: %x", x);
 }
 
 

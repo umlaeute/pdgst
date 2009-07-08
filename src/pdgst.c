@@ -103,7 +103,7 @@ void pdgst_bin_add(t_pdgst_base*element)
   GstElement*lmn=gst_bin_get_by_name(GST_BIN(gele), name);
   g_free(name);
 
-  post("bin adding element %x [%x]", element, element->l_element);
+  //  post("bin adding element %x [%x]", element, element->l_element);
 
   if(NULL!=lmn) {
     /* hey, this has already been added to our pipeline... */
@@ -117,7 +117,7 @@ void pdgst_bin_add(t_pdgst_base*element)
     return;
   }
   handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst_buscallback), element);
-  post("bin added %x [%x] to bus %x: %d", element, element->l_element, bus, handler);
+  //  post("bin added %x [%x] to bus %x: %d", element, element->l_element, bus, handler);
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 
   element->l_sighandler_bin=handler;
@@ -236,12 +236,14 @@ static gboolean pdgst__bus_callback (GstBus     *bus,
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(message)))
     src=GST_ELEMENT(GST_MESSAGE_SRC(message));
 
+#if 0
   if(src) {
     gchar *name;
     g_object_get (G_OBJECT (src), "name", &name, NULL);
     post("got message from %s", name);
     g_free (name);
   }
+#endif
 
   switch (GST_MESSAGE_TYPE (message)) {
   case GST_MESSAGE_UNKNOWN:

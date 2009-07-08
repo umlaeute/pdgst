@@ -149,7 +149,6 @@ static void*pdgst_adc_new(t_floatarg f) {
   pdgst_base__new(&x->x_elem, gensym("appsink"));
 
   while (channels--) {
-    post("creating out#%d", channels);
     outlet_new(&x->x_obj, gensym("signal"));
   }
   channels=x->x_channels;
