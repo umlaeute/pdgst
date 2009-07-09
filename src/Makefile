@@ -33,4 +33,4 @@ $(TARGETS): %.o : %.c pdgst.h Makefile
 	$(CC) $(LINUXCFLAGS) $(LINUXINCLUDE) -o $*.o -c $*.c
 
 clean:
-	rm -f *.o *.pd_* so_locations
+	rm -f *.o *.pd_* */*.o */*.pd_* so_locations
