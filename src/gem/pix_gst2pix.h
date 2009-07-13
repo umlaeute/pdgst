@@ -12,6 +12,12 @@
 
 #include "pdgstGem.h"
 
+#ifdef CLAMP
+# undef CLAMP
+#endif
+
+#include "Base/GemPixUtil.h"
+
 /*-----------------------------------------------------------------
     
   CLASS
@@ -33,17 +39,25 @@ class GEM_EXTERN pix_gst2pix : public pdgstGem
     
     //////////
     // Constructor
-    pix_gst2pix(void);
+    pix_gst2pix(t_symbol*);
 
   protected:
     
     //////////
     // Destructor
-    virtual ~pix_gst2pix();
+    virtual ~pix_gst2pix(void);
 
     //////////
     // fetch an image from the gst-pipeline and  output it as pix
     virtual void render(GemState *state);
+
+    // colorspace
+    GstCaps*color2caps(t_symbol*s);
+
+    pixBlock m_pix;
+    imageStruct*m_image;
+
+    
 };
 
 #endif	// for header file

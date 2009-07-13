@@ -9,38 +9,62 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef INCLUDE_PIX_PIX2GST_H_
-#define INCLUDE_PIX_PIX2GST_H_
+#ifndef INCLUDE_PDGSTGEM_H_
+#define INCLUDE_PDGSTGEM_H_
 
-#include "pdgstGem.h"
+#include "Base/GemBase.h"
+#include "pdgst/pdgst.h"
 
 /*-----------------------------------------------------------------
 -------------------------------------------------------------------
 CLASS
-    pix_pix2gst
+    pdgstGem
     
-    inserts a stream of pixes into a gst-pipeline
+    base class for pdgst-based Gem objects
 -----------------------------------------------------------------*/
 
-class GEM_EXTERN pix_pix2gst : public pdgstGem
+class GEM_EXTERN pdgstGem : public GemBase
 {
-    CPPEXTERN_HEADER(pix_pix2gst, pdgstGem)
+  CPPEXTERN_HEADER(pdgstGem, GemBase)
 
     public:
 
         //////////
         // Constructor
-    	pix_pix2gst();
+    	pdgstGem(const char*);
     	
     protected:
+
+      bool     init(t_symbol*);
     	
     	//////////
     	// Destructor
-    	virtual ~pix_pix2gst();
+    	virtual ~pdgstGem();
+
+      //////////
+      // pdgst-messages
+      void     gstMess(t_symbol*,int,t_atom*);
+      void     infoMess(t_symbol*,int,t_atom*);
+
+      void setProperty(t_symbol*, int, t_atom*);
+      void getProperty(t_symbol*);
+
+      t_pdgst_base*m_base;
+      t_pdgst_property*m_props;
+      GstElement*getPdGstElement(void);
 		
     	//////////
-    	// Do the rendering
-    	virtual void render(GemState *state);
+    	// Do the rendering: fill/drain the gst-pipeline
+    	virtual void render(GemState *state) = 0;
+
+ private:
+      static void     gstMessCallback (void *data, t_symbol*,int,t_atom*);
+      static void     infoMessCallback(void *data, t_symbol*,int,t_atom*);
+      static void     anyMessCallback (void *data, t_symbol*,int,t_atom*);
+
+      t_pdgst_base*pdgst;
+
+      
 };
 
 #endif  // for header file

@@ -8,16 +8,22 @@ default: all
 
 -include ../Make.config
 
+GEM_SRC?=../../../../../pd-gem/Gem/src
+PD_SRC?=../../../../pd/src
+PDGST_SRC?=../../include/
+GST_CFLAGS?=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10 gstreamer-0.10)
+GST_LDFLAGS?=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10 gstreamer-0.10)
+
 #############################################################
 # build gem-external targets and objects
 
-INCLUDE=-I$(PD_SRC) -I$(GEM_SRC) -I. -I$(VIDEOIO_SRC)
-LIBS=-lc -lm -L$(GEM_LIB)
-CC_FLAGS=-c -Wall -O2 -fPIC -ffast-math -mmmx
+INCLUDE=-I$(PD_SRC) -I$(GEM_SRC) -I. -I$(PDGST_SRC)
+LIBS=-lc -lm $(PD_LDFLAGS) $(GEM_LDFLAGS)  $(PDGST_LDFLAGS) $(GST_LDFLAGS)
+CC_FLAGS=-c -Wall -O2 -fPIC -ffast-math -mmmx $(GST_CFLAGS)
 LD_FLAGS=--export-dynamic -shared -o
 EXTENSION=pd_linux
 
-SOURCE := $(wildcard *.cpp)
+SOURCE := $(wildcard pix_*.cpp)
 OBJECTS := $(SOURCE:.cpp=.o)
 TMP := $(wildcard pix_*.cpp)
 TARGETS := $(TMP:.cpp=.$(EXTENSION))
@@ -28,12 +34,10 @@ TARGETS := $(TMP:.cpp=.$(EXTENSION))
 
 all: $(TARGETS)
 
-$(TARGETS) : %.$(EXTENSION) : %.o $(OBJECTS)
-	g++ $(LD_FLAGS) $*.$(EXTENSION) $(OBJECTS) $(VIDEOIO_SRC)/*.o $(LIBS)
-	#strip --strip-unneeded $*.$(EXTENSION)
-	chmod 755 $*.$(EXTENSION)
+$(TARGETS) : %.$(EXTENSION) : %.o pdgstGem.o
+	g++ $(LD_FLAGS) $*.$(EXTENSION) $< pdgstGem.o $(LIBS)
 
-$(OBJECTS) : %.o : %.cpp
+pdgstGem.o $(OBJECTS) : %.o : %.cpp
 	g++ $(CC_FLAGS) $(INCLUDE) -o "$*.o" -c "$*.cpp"
 
 

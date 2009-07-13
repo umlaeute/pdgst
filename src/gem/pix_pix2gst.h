@@ -1,46 +1,51 @@
-//////////////////////////////////////////////////////////////////////////
-//
-//   brigde between pixes and pdgst
-//
-//   This program is free software; you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by
-//   the Free Software Foundation; either version 3 of the License, or
-//   (at your option) any later version.
-//
-///////////////////////////////////////////////////////////////////////////
+/*-----------------------------------------------------------------
+
+    GEM - Graphics Environment for Multimedia
+
+    For information on usage and redistribution, and for a DISCLAIMER OF ALL
+    WARRANTIES, see the file, "GEM.LICENSE.TERMS" in this distribution.
+
+    -----------------------------------------------------------------*/
 
 #ifndef INCLUDE_PIX_PIX2GST_H_
 #define INCLUDE_PIX_PIX2GST_H_
 
-#include "pdgstGem.h"
+#include "pix_gst2pix.h"
+
 
 /*-----------------------------------------------------------------
--------------------------------------------------------------------
-CLASS
+    
+  CLASS
     pix_pix2gst
     
-    inserts a stream of pixes into a gst-pipeline
+    insert a pix into a gst pipeline
+    
+    KEYWORDS
+    pix
+    
+    DESCRIPTION
+
 -----------------------------------------------------------------*/
-
-class GEM_EXTERN pix_pix2gst : public pdgstGem
+class GEM_EXTERN pix_pix2gst : public pix_gst2pix
 {
-    CPPEXTERN_HEADER(pix_pix2gst, pdgstGem)
+  CPPEXTERN_HEADER(pix_pix2gst, pix_gst2pix)
+    
+  public:  
+    
+    //////////
+    // Constructor
+    pix_pix2gst(t_symbol*);
 
-    public:
+  protected:
+    
+    //////////
+    // Destructor
+    virtual ~pix_pix2gst(void);
 
-        //////////
-        // Constructor
-    	pix_pix2gst();
-    	
-    protected:
-    	
-    	//////////
-    	// Destructor
-    	virtual ~pix_pix2gst();
-		
-    	//////////
-    	// Do the rendering
-    	virtual void render(GemState *state);
+    //////////
+    // fetch an image from the gst-pipeline and  output it as pix
+    virtual void render(GemState *state);
+    
 };
 
-#endif  // for header file
+#endif	// for header file
