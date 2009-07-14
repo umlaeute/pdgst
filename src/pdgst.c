@@ -46,7 +46,7 @@ typedef struct _pdgst
 
 static void pdgst__send_(t_symbol*s, int argc, t_atom*argv)
 {
-  //  post("pdgst:send to %s", s->s_name);
+  verbose(2, "pdgst:send to %s", s->s_name);
   if(s->s_thing)typedmess(s->s_thing, s_pdgst__gst, argc, argv);
 }
 
@@ -191,11 +191,13 @@ static void pdgst__remove_all_elements(t_pdgst*x) {
 static void pdgst__rebuild(t_pdgst*x) {
   t_atom ap[1];
   gst_element_set_state (x->x_pipeline, GST_STATE_NULL); // this can halt the system, don't know why yet...
+  verbose(1, "remove all elements");
   pdgst__remove_all_elements(x);
-
+  verbose(1, "deregister");
   pdgst__send_symbol(gensym("deregister"));
+  verbose(1, "register");
   pdgst__send_symbol(gensym("register"));
-
+  verbose(1, "connect");
   SETSYMBOL(ap,  gensym("connect"));
   pdgst__send_(s_pdgst__gst_source, 1, ap);
 }

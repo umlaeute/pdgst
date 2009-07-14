@@ -17,7 +17,7 @@
 #include <gst/base/gstadapter.h>
 
 
-CPPEXTERN_NEW_WITH_ONE_ARG(pix_gst2pix, t_symbol*, A_DEFSYM)
+CPPEXTERN_NEW_WITH_ONE_ARG(pix_gst2pix, t_symbol*, A_SYMBOL)
 
 /////////////////////////////////////////////////////////
 //
@@ -30,10 +30,6 @@ CPPEXTERN_NEW_WITH_ONE_ARG(pix_gst2pix, t_symbol*, A_DEFSYM)
 pix_gst2pix :: pix_gst2pix(t_symbol*s)  : pdgstGem("appsink")
 {
   post("gst2pix::::::::::::::");
-
-  m_image=&m_pix.image;
-  m_image->xsize=0;
-  m_image->ysize=0;
 
   GstCaps*caps=color2caps(s);
   if(caps) {
@@ -54,69 +50,6 @@ pix_gst2pix :: pix_gst2pix(t_symbol*s)  : pdgstGem("appsink")
 /////////////////////////////////////////////////////////
 pix_gst2pix :: ~pix_gst2pix()
 {
-}
-
-/////////////////////////////////////////////////////////
-// colorspace
-//
-// set the colorspace 
-/////////////////////////////////////////////////////////
-GstCaps*pix_gst2pix :: color2caps(t_symbol*color) {
-  int cs=GL_RGBA_GEM;
-
-  if(gensym("rgba")==color) {
-    cs=GL_RGBA_GEM;
-  } else if(gensym("yuv")==color) {
-    cs=GL_YUV422_GEM;
-  } else if(gensym("grey")==color) {
-    cs=GL_LUMINANCE;
-  } else if(gensym("gray")==color) {
-    cs=GL_LUMINANCE;
-  } else if(color&&gensym("")==color) {
-  } else {
-    error("unknown colorspace '%s'", color->s_name);
-    cs=GL_RGBA_GEM;
-  }
-
-  if(m_image)
-    m_image->setCsizeByFormat(cs);
-
-  switch(cs) {
-  case GL_RGBA_GEM:
-    return gst_caps_new_simple ("video/x-raw-rgb", 
-                              "bpp", G_TYPE_INT, 32,
-                              "depth", G_TYPE_INT, 32,
-                              "red_mask",   G_TYPE_INT, 0xff000000,
-                              "green_mask", G_TYPE_INT, 0x00ff0000,
-                              "blue_mask",  G_TYPE_INT, 0x0000ff00,
-                              "alpha_mask", G_TYPE_INT, 0x000000ff,
-                              //                              "endianess", G_TYPE_INT, G_BIG_ENDIAN,
-                              NULL);
-    break;
-  case GL_RGB:
-    return gst_caps_new_simple ("video/x-raw-rgb", 
-                              "bpp", G_TYPE_INT, 24,
-                              "depth", G_TYPE_INT, 24,
-                              "red_mask",   G_TYPE_INT, 0xff000000,
-                              "green_mask", G_TYPE_INT, 0x00ff0000,
-                              "blue_mask",  G_TYPE_INT, 0x0000ff00,
-                              NULL);
-    break;
-  case GL_LUMINANCE:
-    return gst_caps_new_simple ("video/x-raw-gray", 
-                              NULL);
-    break;
-  case GL_YUV422_GEM:
-    return gst_caps_new_simple ("video/x-raw-yuv", 
-                              "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('U', 'Y', 'V', 'Y'),
-                              "framerate", GST_TYPE_FRACTION, 1, 20,
-                              NULL);
-    break;
-  default: 
-    error("no caps for colorspace %d!", cs);
-    break;
-  }
-  return NULL;
 }
 
 /////////////////////////////////////////////////////////

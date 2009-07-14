@@ -109,7 +109,7 @@ void *pdgst_element__new(t_symbol*s, int argc, t_atom* argv) {
   pdgst_pushlocale();
 
   x=(t_pdgst_element*)pd_new(c);
-  pdgst_base__new(&x->x_elem, s);
+  pdgst_base__new(&x->x_elem, s, NULL);
   lmn=x->x_element;
   if(NULL==lmn) {
     error("pdgst factory failed to create element...'%s'", s->s_name);

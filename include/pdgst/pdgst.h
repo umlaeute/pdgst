@@ -25,6 +25,12 @@
 #ifndef INCLUDE_PDGST_H__
 #define INCLUDE_PDGST_H__
 
+#if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
+extern "C" {
+#endif
+
+
+
 #ifdef __WIN32__
 # ifndef NT
 #  define NT
@@ -89,7 +95,7 @@ void pdgst_loop_flush(void);
 
 
 /* from nowhere */
-static char *pdgst_version = "$Revision: 0.0 $";
+static const char *pdgst_version = "$Revision: 0.0 $";
 
 
 extern t_symbol*s_pdgst__gst;
@@ -100,4 +106,9 @@ extern t_symbol*s_pdgst__gst_sink;
 /* objectclasses setup */
 void pdgst_objects_setup(void);
 
+
+
+#if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
+}
+#endif
 #endif /* INCLUDE_PDGST_H__ */

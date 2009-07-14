@@ -46,6 +46,8 @@ typedef struct _pdgst_base
 
   t_symbol*x_name;
   t_symbol*x_gstname;
+
+  t_pd*x_bindobject;
 } t_pdgst_base;
 
 t_symbol*pdgst_base__bindsym(t_pdgst_base*x);
@@ -60,7 +62,7 @@ void pdgst_base__buscallback(GstBus*bus,GstMessage*msg,t_pdgst_base*x);
 
 /* constructor/destructor */
 void pdgst_base__free(t_pdgst_base*x);
-void pdgst_base__new (t_pdgst_base*x, t_symbol*s);
+void pdgst_base__new (t_pdgst_base*x, t_symbol*s, t_pd*bindobject);
 
 /* -------------------------------------------------------- *
  * child class: pdgst_element

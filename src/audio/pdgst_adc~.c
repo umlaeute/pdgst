@@ -146,7 +146,7 @@ static void*pdgst_adc_new(t_floatarg f) {
   x->x_channels=channels;
 
 
-  pdgst_base__new(&x->x_elem, gensym("appsink"));
+  pdgst_base__new(&x->x_elem, gensym("appsink"), NULL);
 
   while (channels--) {
     outlet_new(&x->x_obj, gensym("signal"));

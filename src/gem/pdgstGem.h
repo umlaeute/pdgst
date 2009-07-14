@@ -13,7 +13,14 @@
 #define INCLUDE_PDGSTGEM_H_
 
 #include "Base/GemBase.h"
+#include "Base/GemPixUtil.h"
+
 #include "pdgst/pdgst.h"
+
+
+
+
+
 
 /*-----------------------------------------------------------------
 -------------------------------------------------------------------
@@ -40,6 +47,13 @@ class GEM_EXTERN pdgstGem : public GemBase
     	//////////
     	// Destructor
     	virtual ~pdgstGem();
+
+
+      // colorspace
+      GstCaps*color2caps(t_symbol*s);
+
+      pixBlock m_pix;
+      imageStruct*m_image;
 
       //////////
       // pdgst-messages

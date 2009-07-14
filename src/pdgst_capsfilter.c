@@ -66,7 +66,7 @@ static void *pdgst_capsfilter__new(t_symbol*s, int argc, t_atom* argv) {
   t_pdgst_capsfilter*x=(t_pdgst_capsfilter*)pd_new(pdgst_capsfilter_class);
   GstStructure *struc= gst_structure_empty_new(s->s_name);
 
-  pdgst_base__new(&x->x_elem, gensym("capsfilter"));
+  pdgst_base__new(&x->x_elem, gensym("capsfilter"), NULL);
   if(NULL==x->x_element) {
     return NULL;
   }

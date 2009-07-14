@@ -640,15 +640,18 @@ void pdgst_base__free(t_pdgst_base*x)
   GstElement*lmn=x->l_element;
   //  post("pdgst_base_free: %x", x);
   /* cleanup the Pd-part */
-  pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst);
-  if(lmn->numsrcpads && lmn->numsinkpads) {
-    pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_filter);
-  } else if (lmn->numsrcpads) {
-    pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_source);
-  } else if (lmn->numsrcpads) {
-    pd_unbind(&x->l_obj.ob_pd, s_pdgst__gst_sink);
+  if(x->x_bindobject) {
+    t_pd*bindobject=x->x_bindobject;
+    pd_unbind(bindobject, s_pdgst__gst);
+    if(lmn->numsrcpads && lmn->numsinkpads) {
+      pd_unbind(bindobject, s_pdgst__gst_filter);
+    } else if (lmn->numsrcpads) {
+      pd_unbind(bindobject, s_pdgst__gst_source);
+    } else if (lmn->numsrcpads) {
+      pd_unbind(bindobject, s_pdgst__gst_sink);
+    }
+    pd_unbind(bindobject, pdgst_base__bindsym(x));
   }
-  pd_unbind(&x->l_obj.ob_pd, pdgst_base__bindsym(x));
 
   pdgst_base__del_signals(x);
 
@@ -675,11 +678,15 @@ void pdgst_base__free(t_pdgst_base*x)
 }
 
 
-void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
+void pdgst_base__new(t_pdgst_base*x, t_symbol*s, t_pd*bindobject)
 {
   gchar *name=NULL;
 
   GstElement*lmn=gst_element_factory_make(s->s_name, NULL);
+  if(NULL==bindobject)
+    bindobject=&x->l_obj.ob_pd;
+
+
   x->l_element=lmn;
   gst_object_ref (x->l_element);
   gst_object_sink(x->l_element);
@@ -701,19 +708,20 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s)
   x->l_sighandler_pad_del =0;
   x->l_sighandler_pad_done=0;
 
+  x->x_bindobject=bindobject;
 
-  pd_bind(&x->l_obj.ob_pd, s_pdgst__gst);
+  pd_bind(bindobject, s_pdgst__gst);
   if((lmn->numsrcpads > 0) && (lmn->numsinkpads > 0)) {
-    pd_bind(&x->l_obj.ob_pd, s_pdgst__gst_filter);
+    pd_bind(bindobject, s_pdgst__gst_filter);
   } else if (lmn->numsrcpads > 0) {
-    pd_bind(&x->l_obj.ob_pd, s_pdgst__gst_source);
+    pd_bind(bindobject, s_pdgst__gst_source);
   } else if (lmn->numsinkpads > 0) {
-    pd_bind(&x->l_obj.ob_pd, s_pdgst__gst_sink);
+    pd_bind(bindobject, s_pdgst__gst_sink);
   } else {
     pd_error(x, "[%s]: hmm, element without pads", x->x_name->s_name);
   }
-
-  pd_bind(&x->l_obj.ob_pd, pdgst_base__bindsym(x));
+  /* for bus-callbacks */
+  pd_bind(bindobject, pdgst_base__bindsym(x));
 
 
 

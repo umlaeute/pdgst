@@ -10,15 +10,14 @@
 #ifndef INCLUDE_PIX_PIX2GST_H_
 #define INCLUDE_PIX_PIX2GST_H_
 
-#include "pix_gst2pix.h"
-
+#include "pdgstGem.h"
 
 /*-----------------------------------------------------------------
     
   CLASS
     pix_pix2gst
     
-    insert a pix into a gst pipeline
+    Loads in a movie with the videoIO framework
     
     KEYWORDS
     pix
@@ -26,15 +25,15 @@
     DESCRIPTION
 
 -----------------------------------------------------------------*/
-class GEM_EXTERN pix_pix2gst : public pix_gst2pix
+class GEM_EXTERN pix_pix2gst : public pdgstGem
 {
-  CPPEXTERN_HEADER(pix_pix2gst, pix_gst2pix)
+  CPPEXTERN_HEADER(pix_pix2gst, pdgstGem)
     
   public:  
     
     //////////
     // Constructor
-    pix_pix2gst(t_symbol*);
+  pix_pix2gst(t_symbol*, t_floatarg, t_floatarg);
 
   protected:
     
@@ -45,7 +44,10 @@ class GEM_EXTERN pix_pix2gst : public pix_gst2pix
     //////////
     // fetch an image from the gst-pipeline and  output it as pix
     virtual void render(GemState *state);
-    
+
+
+    guint m_width, m_height;
+    GLenum m_format;
 };
 
 #endif	// for header file

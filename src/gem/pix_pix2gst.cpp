@@ -14,9 +14,10 @@
 #include "pix_pix2gst.h"
 
 #include <gst/app/gstappsrc.h>
+#include <gst/base/gstadapter.h>
 
 
-CPPEXTERN_NEW_WITH_ONE_ARG(pix_pix2gst, t_symbol*, A_DEFSYM)
+CPPEXTERN_NEW_WITH_THREE_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT)
 
 /////////////////////////////////////////////////////////
 //
@@ -26,20 +27,28 @@ CPPEXTERN_NEW_WITH_ONE_ARG(pix_pix2gst, t_symbol*, A_DEFSYM)
 // Constructor
 //
 /////////////////////////////////////////////////////////
-pix_pix2gst :: pix_pix2gst(t_symbol*s)  : pdgstGem("appsrc")
+pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h)  : pdgstGem("appsrc"),
+                                                                       m_width(0), m_height(0), m_format(-1)
 {
-  post("pix2gst::::::::::::::");
+  if(w<0)w=128;
+  if(h<0)h=128;
 
-  m_image=&m_pix.image;
-  m_image->xsize=0;
-  m_image->ysize=0;
+  m_width=w;
+  m_height=h;
 
   GstCaps*caps=color2caps(s);
+  m_format=m_image->format;
   if(caps) {
     GstAppSrc*src=GST_APP_SRC(getPdGstElement());
+    gst_caps_set_simple (caps,
+                         "width", G_TYPE_INT, m_width,
+                         "height", G_TYPE_INT, m_height,
+                         "framerate", GST_TYPE_FRACTION, 1, 20,
+                         NULL);
+    verbose(1, "pix2gst caps: %s", gst_caps_to_string (caps) );
+
     gst_app_src_set_caps(src, caps);
 
-    post("pix2gst caps: %s", gst_caps_to_string (caps) );
     gst_caps_unref (caps);
     caps=NULL;
   }
@@ -58,11 +67,55 @@ pix_pix2gst :: ~pix_pix2gst()
 /////////////////////////////////////////////////////////
 // render
 //
-// insert a pix into the gst-pipeline
+// fetch an image from the pipeline
+// and output it as a pix
 /////////////////////////////////////////////////////////
+
 void pix_pix2gst :: render(GemState *state)
 {
+  if (!state || !state->image)return;
+  imageStruct*img=&state->image->image;
+  if(NULL==img || NULL==img->data) {
+    return;
+  }
 
+  if(img->xsize!=m_width || img->ysize!=m_height || img->format!=m_format) {
+    error("pix does not match %dx%d", m_width, m_height);
+    return;
+  }
+
+  int linelength=img->xsize*img->csize;
+  int linelengthO=GST_ROUND_UP_4(linelength);
+
+  int size = img->ysize * GST_ROUND_UP_4(img->xsize*img->csize);
+
+  GstAppSrc*source=GST_APP_SRC(getPdGstElement());
+  GstBuffer *buf = gst_buffer_new_and_alloc(size);
+
+  unsigned char*rec_data=(unsigned char*)GST_BUFFER_DATA (buf);
+  unsigned char*data=img->data;
+
+  int i=0;
+#if 1
+  bool upsidedown=img->upsidedown;
+  for(i=0; i<img->ysize; i++) {
+    int j=(upsidedown)?i:(img->ysize-i);
+    unsigned char*linein =    data +j*linelength;
+    unsigned char*lineout=rec_data +i*linelengthO;
+
+    memcpy(lineout, linein, linelength);
+  }
+#else
+  for(i=0; i<img->ysize; i++) {
+    unsigned char*linein =    data +i*linelength;
+    unsigned char*lineout=rec_data +i*linelength;
+    memcpy(lineout, linein, linelength);
+    post("offset[%d]=%d", i, i*linelength);
+  }
+#endif
+
+
+  gst_app_src_push_buffer (source, buf);
 }
 
 /////////////////////////////////////////////////////////

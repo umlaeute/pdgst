@@ -183,7 +183,7 @@ static void*pdgst_dac_new(t_floatarg f) {
   }
   channels=x->x_channels;
 
-  pdgst_base__new(&x->x_elem, gensym("appsrc"));
+  pdgst_base__new(&x->x_elem, gensym("appsrc"), NULL);
 
   src=(GstAppSrc*)x->x_element;
 
