@@ -46,6 +46,7 @@ static t_int*pdgst_adc_perform(t_int*w){
 
   GstBuffer*buf=NULL;
   int buffersize=sizeof(t_sample)*x->x_channels*n;
+  int availablesize=0;
   GstAppSink*sink=GST_APP_SINK(x->x_element);
 
   for (i=0;i < x->x_channels;i++) {
@@ -53,8 +54,13 @@ static t_int*pdgst_adc_perform(t_int*w){
   }
 
   /* now get the GstBuffer holding the data */
-  if( gst_adapter_available(x->x_adapter) < buffersize ) {
-    buf= gst_app_sink_pull_buffer(sink);
+  availablesize=gst_adapter_available(x->x_adapter);
+  if( availablesize < buffersize ) {
+    /* this might block */
+
+    if( GST_STATE(sink)==GST_STATE_PLAYING && GST_STATE_PENDING(sink)==GST_STATE_VOID_PENDING ) {
+      buf= gst_app_sink_pull_buffer(sink);
+    }
     if(buf) {
       gst_adapter_push (x->x_adapter, buf);
     }
@@ -79,7 +85,6 @@ static t_int*pdgst_adc_perform(t_int*w){
       }
     }
   }
-
   return (w+offset+1+i);
 }
 
@@ -87,7 +92,7 @@ static t_int*pdgst_adc_perform(t_int*w){
 static void pdgst_adc_dsp(t_pdgst_adc *x, t_signal **sp){
   int i;
   t_int** myvec = getbytes(sizeof(t_int*)*(x->x_channels + 3));
-  
+
   myvec[0] = (t_int*)x;
   myvec[1] = (t_int*)sp[0]->s_n;
 
