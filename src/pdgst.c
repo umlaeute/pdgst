@@ -113,7 +113,7 @@ void pdgst_bin_add(t_pdgst_base*element)
 
   if(gst_bin_add(GST_BIN(gele), element->l_element)) {
   } else {
-    post("could not add element '%s' [%x] to bus", element->x_name->s_name, element);
+    pd_error(element, "could not add element '%s' [%x] to bus", element->x_name->s_name, element);
     return;
   }
   handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst_buscallback), element);
@@ -137,20 +137,19 @@ void pdgst_bin_remove(t_pdgst_base*element)
 
   if(NULL==lmn) {
     /* no element of this name in our pipeline... */
-    post("element %x not in bin", element);
+    verbose(1, "element %x not in bin", element);
     return;
   }
   gst_object_unref (lmn); /* since we own bus returned by gst_bin_get_by_name() */
 
   if(id) {
-    startpost("removing buscallback-handler %d for %x: ", id, element);
+    verbose(2, "removing buscallback-handler %d for %x: ", id, element);
     if (g_signal_handler_is_connected (bus, id)) {
       g_signal_handler_disconnect (bus, id);
-      post("ok");
-    } else post("ko");
+    }
     element->l_sighandler_bin=0;
   } else {
-    post("no buscallback-handler to remove for element %x", element);
+    verbose(2, "no buscallback-handler to remove for element %x", element);
   }
   gst_bus_set_flushing(bus, TRUE) ;
 
@@ -167,7 +166,7 @@ void pdgst_bin_remove(t_pdgst_base*element)
 /* "real" pdgst object for meta-control */
 
 static void pdgst__gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
-  post("ignoring message:: __gst: %s", s->s_name);
+  //post("ignoring message:: __gst: %s", s->s_name);
 }
 
 
@@ -242,7 +241,7 @@ static gboolean pdgst__bus_callback (GstBus     *bus,
   if(src) {
     gchar *name;
     g_object_get (G_OBJECT (src), "name", &name, NULL);
-    post("got message from %s", name);
+    verbose(1, "got message from %s", name);
     g_free (name);
   }
 #endif
@@ -307,7 +306,7 @@ static gboolean pdgst__bus_callback (GstBus     *bus,
   case GST_MESSAGE_ASYNC_DONE:
     break;
   default:
-    post("hmm, unknown message of type '%s'", GST_MESSAGE_TYPE_NAME(message));
+    pd_error(x, "hmm, unknown message of type '%s'", GST_MESSAGE_TYPE_NAME(message));
     break;
   }
 
@@ -323,7 +322,7 @@ static void pdgst__save(t_pdgst*x, t_symbol*file) {
       gst_xml_write_file (GST_ELEMENT (x->x_pipeline), f);
       fclose(f);
     } else {
-      error("[pdgst] failed to write pipeline to '%s'", file->s_name);
+      pd_error(x, "[pdgst] failed to write pipeline to '%s'", file->s_name);
     }
   }
 }
@@ -335,8 +334,8 @@ static void pdgst__free(t_pdgst*x) {
 }
 
 void cb_message_error (GstBus*bus,GstMessage*msg,t_pdgst*x) {
-  post("%x is a message!", msg);
-  post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
+  verbose(1, "%x is a message!", msg);
+  verbose(1, "message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
 }
 
 static void *pdgst__new(t_symbol*s, int argc, t_atom* argv) {
@@ -415,14 +414,14 @@ int pdgst_loader_init(void)
 static char*s_locale=NULL;
 void pdgst_pushlocale(void)
 {
-  if(s_locale)post("pushing locale '%s'", s_locale);
+  if(s_locale)verbose(1, "pushing locale '%s'", s_locale);
   s_locale=setlocale(LC_NUMERIC, NULL);
   setlocale(LC_NUMERIC, "C");
 }
 
 void pdgst_poplocale(void)
 {
-  if(!s_locale)post("popping empty locale");
+  if(!s_locale)verbose(1, "popping empty locale");
   setlocale(LC_NUMERIC, s_locale);
   s_locale=NULL;
 }
