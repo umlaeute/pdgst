@@ -24,6 +24,7 @@
 #define MAXPDCHANNELS 1024
 #include "pdgst/pdgst.h"
 #include <gst/app/gstappsrc.h>
+#include <gst/audio/multichannel.h>
 
 static t_class *pdgst_dac_class;
 typedef struct _pdgst_dac
@@ -33,6 +34,7 @@ typedef struct _pdgst_dac
   t_sample x_f; /* should this be t_sample or t_float? */
 
   t_pdgst_property*x_props;
+  GstFlowReturn x_flowstate;
 } t_pdgst_dac;
 
 static t_int*pdgst_dac_perform(t_int*w){
@@ -49,17 +51,7 @@ static t_int*pdgst_dac_perform(t_int*w){
     in[i] = (t_float *)(w[offset+i]);
   }
 
-  /* now copy the data into the GstBuffer */
-#if 0
-  /* non-interleaved */
-  for (i=0;i < x->x_channels;i++) {
-    t_sample*inbuf=in[i];
-    for(j=0; j<n; j++) {
-      *outbuf++=*inbuf++;
-    }
-  }
-#else
-  /* interleaved */
+  /* now copy the data into the interleaved GstBuffer */
   for(j=0; j<n; j++) {
     for (i=0;i < x->x_channels;i++) {
       t_sample*inbuf=in[i];
@@ -67,21 +59,23 @@ static t_int*pdgst_dac_perform(t_int*w){
       *outbuf++=f;
     }
   }
-#endif
 
   GstFlowReturn ret= gst_app_src_push_buffer(src,buf);
 
   switch(ret) {
-  case GST_FLOW_OK: break;
+  case GST_FLOW_OK: 
+    if(ret!=x->x_flowstate)verbose(1, "pdgst_dac~ started transmission");
+    break;
   case GST_FLOW_WRONG_STATE:
-    pd_error(x, "dsp in wrong state");
+    if(ret!=x->x_flowstate)pd_error(x, "dsp in wrong state");
     break;
   case GST_FLOW_UNEXPECTED:
-    pd_error(x, "dsp met EOS");
+    if(ret!=x->x_flowstate)pd_error(x, "dsp met EOS");
     break;
   default:
-    pd_error(x, "push returned %d", ret);
+    if(ret!=x->x_flowstate)pd_error(x, "push returned %d", ret);
   }
+  x->x_flowstate=ret;
 
   return (w+offset+1+i);
 }
@@ -90,6 +84,8 @@ static t_int*pdgst_dac_perform(t_int*w){
 static void pdgst_dac_dsp(t_pdgst_dac *x, t_signal **sp){
   int i;
   t_int** myvec = getbytes(sizeof(t_int*)*(x->x_channels + 3));
+
+  x->x_flowstate=0;
   
   myvec[0] = (t_int*)x;
   myvec[1] = (t_int*)sp[0]->s_n;
@@ -167,6 +163,7 @@ static void*pdgst_dac_new(t_floatarg f) {
   GstAppSrc*src=NULL;
   GstCaps*caps=NULL;
   t_pdgst_dac*x=(t_pdgst_dac*)pd_new(pdgst_dac_class);
+  GstAudioChannelPosition*chan_pos=NULL;
 
   pdgst_pushlocale();
 
@@ -183,6 +180,13 @@ static void*pdgst_dac_new(t_floatarg f) {
   }
   channels=x->x_channels;
 
+
+  chan_pos=(GstAudioChannelPosition*)getbytes(channels*sizeof(GstAudioChannelPosition));
+  while (channels--) {
+    chan_pos[channels]=GST_AUDIO_CHANNEL_POSITION_NONE;
+  }
+  channels=x->x_channels;
+
   pdgst_base__new(&x->x_elem, gensym("appsrc"), NULL);
 
   src=(GstAppSrc*)x->x_element;
@@ -194,6 +198,10 @@ static void*pdgst_dac_new(t_floatarg f) {
                             "rate", G_TYPE_INT, samplerate,
                             "channels", G_TYPE_INT, channels,
                             NULL);
+
+  GstStructure*struc=gst_caps_get_structure(caps, 0);
+  gst_audio_set_channel_positions (struc, chan_pos);
+
   gst_app_src_set_caps(src, caps);
 
   /* property handling
@@ -207,6 +215,9 @@ static void*pdgst_dac_new(t_floatarg f) {
   }
   g_free (property_specs);
 
+
+  x->x_flowstate=0;
+
 #if 0
   GstAppSrcCallbacks callbacks;
   callbacks.need_data=pdgst_dac__need_data;
@@ -217,6 +228,8 @@ static void*pdgst_dac_new(t_floatarg f) {
                                        x,
                                        NULL);
 #endif
+  freebytes(chan_pos,channels*sizeof(GstAudioChannelPosition)); 
+
   pdgst_poplocale();
   return x;
 }

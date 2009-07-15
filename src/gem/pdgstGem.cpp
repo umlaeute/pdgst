@@ -92,7 +92,7 @@ GstCaps*pdgstGem :: color2caps(t_symbol*color) {
   case GL_RGBA_GEM:
     return gst_caps_new_simple ("video/x-raw-rgb", 
                               "bpp", G_TYPE_INT, 32,
-                              "depth", G_TYPE_INT, 24,
+                              "depth", G_TYPE_INT, 32,
                               "red_mask",   G_TYPE_INT, 0xff000000,
                               "green_mask", G_TYPE_INT, 0x00ff0000,
                               "blue_mask",  G_TYPE_INT, 0x0000ff00,

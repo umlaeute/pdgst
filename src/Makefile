@@ -14,7 +14,7 @@ GST_CFLAGS=$(shell pkg-config --cflags gstreamer-0.10)
 GST_LDFLAGS=$(shell pkg-config --libs gstreamer-0.10)
 
 GST_PLUGIN_CFLAGS=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10)
-GST_PLUGIN_LDFLAGS=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10)
+GST_PLUGIN_LDFLAGS=-lgstapp-0.10 -lgstaudio-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10)
 
 # ----------------------- LINUX i386 -----------------------
 

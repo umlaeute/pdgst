@@ -69,7 +69,12 @@ static void pdgst_base__gstout_mess(t_pdgst_base*x, t_symbol*s, int argc, t_atom
 static void pdgst_base__infoout(t_pdgst_base*x, int argc, t_atom*argv)
 {
   if(x&&x->x_infout) {
-    outlet_anything(x->x_infout, gensym("_info"), argc, argv);
+    //    outlet_anything(x->x_infout, gensym("_info"), argc, argv);
+    if(argc&&A_SYMBOL==argv[0].a_type) {
+      outlet_anything(x->x_infout, atom_getsymbol(argv), argc-1, argv+1);
+    } else {
+      outlet_list(x->x_infout, 0, argc, argv);
+    }
   } else {
     if(x && x->x_gstname) {
       pd_error(x, "info[%s] ", x->x_gstname->s_name);
@@ -693,8 +698,8 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s, t_pd*bindobject)
 
   if(NULL==lmn) return;
 
+  x->x_gstout=outlet_new(&x->l_obj, 0);
   x->x_infout=outlet_new(&x->l_obj, 0);
-  x->x_gstout=x->x_infout; /* for now, re-use the info-out; LATER create our own outlet */
   x->l_canvas=NULL;
 
   x->x_name=s;
