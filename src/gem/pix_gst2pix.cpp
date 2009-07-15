@@ -29,19 +29,21 @@ CPPEXTERN_NEW_WITH_ONE_ARG(pix_gst2pix, t_symbol*, A_SYMBOL)
 /////////////////////////////////////////////////////////
 pix_gst2pix :: pix_gst2pix(t_symbol*s)  : pdgstGem("appsink")
 {
-  post("gst2pix::::::::::::::");
-
   GstCaps*caps=color2caps(s);
   if(caps) {
     GstAppSink*sink=GST_APP_SINK(getPdGstElement());
     gst_app_sink_set_caps(sink, caps);
 
-    post("gst2pix caps: %s", gst_caps_to_string (caps) );
+    verbose(1, "gst2pix caps: %s", gst_caps_to_string (caps) );
     gst_caps_unref (caps);
     caps=NULL;
   }
-
   m_image->reallocate();
+
+  t_atom ap[1];
+  SETFLOAT(ap, 1);
+  setProperty(gensym("max-buffers"), 1, ap);
+  setProperty(gensym("drop"), 1, ap);
 }
 
 /////////////////////////////////////////////////////////
