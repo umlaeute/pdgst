@@ -158,7 +158,6 @@ static void*pdgst_adc_new(t_floatarg f) {
   }
   channels=x->x_channels;
 
-
   sink=GST_APP_SINK(x->x_element);
 
   gint samplerate=(gint)sys_getsr();
@@ -168,6 +167,7 @@ static void*pdgst_adc_new(t_floatarg f) {
                             "rate", G_TYPE_INT, samplerate,
                             "channels", G_TYPE_INT, channels,
                             NULL);
+
   gst_app_sink_set_caps(sink, caps);
 
   /* property handling
@@ -184,14 +184,6 @@ static void*pdgst_adc_new(t_floatarg f) {
 
   /* buffer */
   x->x_adapter=gst_adapter_new();
-
-#if 0
-  /* blocksize ? */
-  t_atom a;
-  SETFLOAT(&a, 64*x->x_channels*sizeof(t_sample));
-  pdgst_adc_any(x, gensym("blocksize"), 1, &a);
-#endif
-
 
   pdgst_poplocale();
   return x;
