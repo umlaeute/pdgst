@@ -227,6 +227,8 @@ void pdgst_base__setParam(t_pdgst_base*x, t_pdgst_property*prop, t_atom*ap)
       pd_error(x, "hmm, couldn't create GValue from atom");
     }
 
+    g_value_unset (&v);
+
     //    pd_error(x, "setting parameters not yet implemented...");
     return;
 }

@@ -182,6 +182,11 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
       break;
     } else {
       /* no enum class */
+      if(g_type_is_a(G_VALUE_TYPE (v), GST_TYPE_ELEMENT)) {
+        GstElement*element=gst_bin_get_by_name(pdgst_get_bin(NULL), s->s_name);
+        g_value_set_object(v, element);
+        return v;
+      }
       error("pdgst atom converter failed");
       startpost("cannot convert to '%s':", G_VALUE_TYPE_NAME(v)); postatom(1, (t_atom*)a); endpost();
     }
