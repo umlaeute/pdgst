@@ -8,7 +8,7 @@ default: all
 
 -include ../Make.config
 
-GEM_SRC?=../../../../../pd-gem/Gem/src
+GEM_SRC?=../../../Gem/src
 PD_SRC?=../../../../pd/src
 PDGST_SRC?=../../include/
 GST_CFLAGS?=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10 gstreamer-0.10)
