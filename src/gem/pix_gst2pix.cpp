@@ -104,8 +104,6 @@ void pix_gst2pix :: render(GemState *state)
 
     gst_caps_unref(caps);
     //gst_structure_free (str);
-
-
   }
 
   switch(fourcc) {
@@ -116,25 +114,39 @@ void pix_gst2pix :: render(GemState *state)
     m_image->fromYUY2(data); 
     break;
   case 0:
-    if(24==bpp&&24==depth)
+    if(24==bpp&&24==depth) {
       m_image->fromRGB(data);
-    else if(32==bpp&&32==depth)
+    } else if(32==bpp&&32==depth) {
       m_image->fromRGBA(data);
-    else if(8==bpp&&8==depth)
+    } else if(8==bpp&&8==depth)
       m_image->fromGray(data);
-    else
+    else {
       error("unknown format: %d/%d", bpp, depth);
+    }
     break;
   default:
     error("unknown format '%" GST_FOURCC_FORMAT "'", GST_FOURCC_ARGS (fourcc));
     return;
   }
+  /* get rid of the GstBuffer */
+  data=NULL;
+  gst_buffer_unref(buf);
+
+  /* send it downstream */
   m_image->upsidedown=true;
 
   m_pix.newimage=true;
   // set image
   state->image = &m_pix;
 }
+
+//////////
+// get the original state back
+void pix_gst2pix :: postrender(GemState *state){
+#warning LATER store the original pixblock in render() and restore it here 
+  state->image = NULL;//orgPixBlock;
+}
+
 
 /////////////////////////////////////////////////////////
 // static member function

@@ -44,6 +44,9 @@ class GEM_EXTERN pix_gst2pix : public pdgstGem
     //////////
     // fetch an image from the gst-pipeline and  output it as pix
     virtual void render(GemState *state);
+
+    virtual void postrender(GemState *state);
+    pixBlock*orgPixBlock;
 };
 
 #endif	// for header file
