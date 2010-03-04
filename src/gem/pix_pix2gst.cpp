@@ -10,8 +10,9 @@
 //
 /////////////////////////////////////////////////////////
 
-//#include "pdgstGem.cpp"
 #include "pix_pix2gst.h"
+#include "Base/GemState.h"
+
 
 #include <gst/app/gstappsrc.h>
 #include <gst/base/gstadapter.h>
