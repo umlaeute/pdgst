@@ -253,12 +253,18 @@ static void pdgst_base__taglist_foreach(const GstTagList *list, const gchar *tag
   }
 }
 
-#define CALLBACK_UNIMPLEMENTED(x)  pd_error(x, "[%s] unimplemented message in %s:%d", x->x_gstname->s_name, __FILE__, __LINE__);
+#define CALLBACK_UNIMPLEMENTED(x)  do { \
+    t_pdgst_base*y=x; \
+    if(y) \
+      pd_error(y, "[%s] unimplemented message in %s:%d", (x->x_gstname?x->x_gstname->s_name:"<pdgst:unknown>"), __FILE__, __LINE__);  \
+    else \
+      error("<pdgst:noobj>: unimplemented message in %s:%d", __FILE__, __LINE__); \
+  } while(0)
 
 static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
   switch (GST_MESSAGE_TYPE (message)) {
   case GST_MESSAGE_UNKNOWN:
-    post("unknown message");
+    post("pdgst: unknown message");
     break;
   case GST_MESSAGE_EOS: {
     /* end-of-stream */
@@ -277,8 +283,12 @@ static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
     SETSYMBOL(ap+2, gensym(err->message));
     SETSYMBOL(ap+3, gensym(gst_error_get_message(err->domain, err->code)));
 
-    pd_error (x, "[%s]: %s", x->x_name->s_name, err->message);
-    pd_error (x, "[%s]: %s", x->x_name->s_name, debug);
+    if(x){
+      pd_error (x, "[%s]: %s", x->x_name->s_name, err->message);
+      pd_error (x, "[%s]: %s", x->x_name->s_name, debug);
+    } else {
+      error("pdgst: %s (%s)", err->message, debug);
+    }
 
     g_error_free (err);
     g_free (debug);
@@ -297,12 +307,15 @@ static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
 
     SETSYMBOL(ap+0, gensym(g_quark_to_string(err->domain)));
     SETFLOAT(ap+1, err->code);
-
-    error ("[%s]: %s", x->x_name->s_name, err->message);
-    error ("[%s]: %s", x->x_name->s_name, debug);
+    if(x) {
+      error ("[%s]: %s", x->x_name->s_name, err->message);
+      error ("[%s]: %s", x->x_name->s_name, debug);
+    } else {
+      error("pdgst: %s (%s)", err->message, debug);
+    }
     g_error_free (err);
     g_free (debug);
-
+    
     pdgst_base__infoout_mess(x, gensym("warning"), 2, ap);
   }
     break;
@@ -316,8 +329,12 @@ static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
     SETSYMBOL(ap+0, gensym(g_quark_to_string(err->domain)));
     SETFLOAT(ap+1, err->code);
 
-    post ("[%s]: %s", x->x_name->s_name, err->message);
-    post ("[%s]: %s", x->x_name->s_name, debug);
+    if(x) {
+      post ("[%s]: %s", x->x_name->s_name, err->message);
+      post ("[%s]: %s", x->x_name->s_name, debug);
+    } else {
+      post("pdgst: %s (%s)", err->message, debug);
+    }
     g_error_free (err);
     g_free (debug);
 
@@ -328,7 +345,8 @@ static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
   case GST_MESSAGE_TAG: {
     GstTagList*tag_list;
     gst_message_parse_tag               (message, &tag_list);
-    gst_tag_list_foreach(tag_list, pdgst_base__taglist_foreach, x);
+    if(x)
+      gst_tag_list_foreach(tag_list, pdgst_base__taglist_foreach, x);
   }
     break;
 #if GST_CHECK_VERSION(0, 10, 11)
@@ -405,9 +423,27 @@ static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
   }
     break;
 #endif /* gst-0.10.22 */
-  case GST_MESSAGE_STREAM_STATUS:
-    /* not implemented upstream */
-    CALLBACK_UNIMPLEMENTED(x);
+  case GST_MESSAGE_STREAM_STATUS: do {
+#if GST_CHECK_VERSION(0, 10, 24)
+      GstStreamStatusType type;
+      GstElement *owner;
+      gchar*name;
+      t_atom ap[2];
+      
+      gst_message_parse_stream_status (message, &type, &owner);
+      
+      SETFLOAT(ap+0, type);
+      
+      g_object_get (G_OBJECT (owner), "name", &name, NULL);
+      SETSYMBOL(ap+1, gensym(name));
+      g_free (name);
+      
+      pdgst_base__infoout_mess(x, gensym("stream_status"), 2, ap);
+#else
+      CALLBACK_UNIMPLEMENTED(x);
+#endif
+
+    } while (0);
     break;
   case GST_MESSAGE_APPLICATION: {
     const GstStructure * structure = gst_message_get_structure(message);
@@ -538,7 +574,11 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
     src=GST_ELEMENT(GST_MESSAGE_SRC(msg));
   //post("pdgst__element_buscallback: %d", __LINE__);
   if(!src) {
-    error("fixme: gst-busmessage without source");
+#if 0
+    /* this seems to be perfectly legal; e.g. "stream-status" messages come without source... */
+    error("fixme: gst-busmessage without source: ('%s') %s", GST_MESSAGE_TYPE_NAME(msg), (x?(x->x_name->s_name):"<unkown>"));
+#endif
+    pdgst_base__busmsg(x, msg);
     return;
   }
 
