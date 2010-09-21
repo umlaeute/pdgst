@@ -20,6 +20,24 @@
 #include "pdgst/pdgst.h"
 #include <string.h>
 
+
+static char*unquote_symbol(const t_symbol*sym) {
+  char*result=getbytes(sizeof(char)*MAXPDSTRING);
+  int i=0;
+  const char*s=sym->s_name;
+  char*r=result;
+  for(i=0, s=sym->s_name; *s && i<MAXPDSTRING; i++) {
+    if('\\'==s[0]) {
+      s++;
+    }
+    *r++=*s++;
+  }
+
+  result[i]=0;
+
+  return result;
+}
+
 t_atom*pdgst__gvalue2atom(const GValue*v, t_atom*a0)
 {
   t_atom*a=a0;
@@ -186,7 +204,20 @@ GValue*pdgst__atom2gvalue(const t_atom*a, GValue*v0)
         GstElement*element=gst_bin_get_by_name(pdgst_get_bin(NULL), s->s_name);
         g_value_set_object(v, element);
         return v;
+      } else if GST_IS_CAPS(v) {
+        /* we really should find a better way to deal with caps */
+        /* (or even better, make Pd properly handle commans) */
+        /* (or even better, make Pd handle lists of lists)  */
+        GstCaps*caps=NULL;
+        char*string = unquote_symbol(s);
+        caps=gst_caps_from_string(string);
+        gst_value_set_caps(v, caps);
+        gst_caps_unref(caps); /* is this enough? */
+        
+        freebytes(string, MAXPDSTRING);
+        return v;
       }
+      /* this also fails with GstCaps */
       error("pdgst atom converter failed");
       startpost("cannot convert to '%s':", G_VALUE_TYPE_NAME(v)); postatom(1, (t_atom*)a); endpost();
     }
