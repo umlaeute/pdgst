@@ -44,7 +44,7 @@ pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h)  : pdgstGem(
     gst_caps_set_simple (caps,
                          "width", G_TYPE_INT, m_width,
                          "height", G_TYPE_INT, m_height,
-                         "framerate", GST_TYPE_FRACTION, 1, 20,
+                         "framerate", GST_TYPE_FRACTION, 20, 1,
                          NULL);
     verbose(1, "pix2gst caps: %s", gst_caps_to_string (caps) );
 
