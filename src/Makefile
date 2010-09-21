@@ -1,6 +1,6 @@
-EXT?=pd_linux
-CC?=gcc 
-PDSRC?=../../../pd/src
+EXT=pd_linux
+CC=gcc 
+PD_SRC=../../../pd/src
 
 vpath %.h ../include/pdgst
 
@@ -21,7 +21,7 @@ GST_PLUGIN_LDFLAGS=-lgstapp-0.10 -lgstaudio-0.10 $(shell pkg-config --libs gstre
 .SUFFIXES: .$(EXT)
 
 LINUXCFLAGS = -g -O2 -fPIC -DPD $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS) $(CFLAGS)
-LINUXINCLUDE =  -I$(PDSRC) -I../include
+LINUXINCLUDE =  -I$(PD_SRC) -I../include
 LINUXLDFLAGS = -lc -lm  $(GST_LDFLAGS) $(GST_PLUGIN_LDFLAGS)
 
 $(EXT): $(NAME).$(EXT)

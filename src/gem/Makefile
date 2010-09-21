@@ -8,11 +8,11 @@ default: all
 
 -include ../Make.config
 
-GEM_SRC?=../../../Gem/src
-PD_SRC?=../../../../pd/src
-PDGST_SRC?=../../include/
-GST_CFLAGS?=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10 gstreamer-0.10)
-GST_LDFLAGS?=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10 gstreamer-0.10)
+GEM_SRC=../../../Gem/src
+PD_SRC=../../../../pd/src
+PDGST_SRC=../../include/
+GST_CFLAGS=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10 gstreamer-0.10)
+GST_LDFLAGS=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10 gstreamer-0.10)
 
 #############################################################
 # build gem-external targets and objects
