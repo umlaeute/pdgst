@@ -115,9 +115,9 @@ GstCaps*pdgstGem :: color2caps(t_symbol*color) {
     break;
   case GL_YUV422_GEM:
     return gst_caps_new_simple ("video/x-raw-yuv", 
-                              "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('U', 'Y', 'V', 'Y'),
-                              "framerate", GST_TYPE_FRACTION, 20, 1,
-                              NULL);
+                                "format", GST_TYPE_FOURCC, GST_MAKE_FOURCC('U', 'Y', 'V', 'Y'),
+                                // "framerate", GST_TYPE_FRACTION, 20, 1,
+                                NULL);
     break;
   default: 
     error("no caps for colorspace %d!", cs);
