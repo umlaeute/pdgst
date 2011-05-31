@@ -64,7 +64,9 @@ pix_gst2pix :: ~pix_gst2pix()
 void pix_gst2pix :: render(GemState *state)
 {
   GstAppSink*sink=GST_APP_SINK(getPdGstElement());
+  post("render");
   if( !sink || gst_app_sink_is_eos(GST_APP_SINK (sink)) ) {
+    post("no valid sink %x", sink);
     return;
   }
   GstBuffer *buf = 0;
@@ -72,6 +74,7 @@ void pix_gst2pix :: render(GemState *state)
     {
       buf = gst_app_sink_pull_buffer(sink);
     }
+  post("buf=%x", buf);
   if(!buf) return;
 
   guint8 *data = GST_BUFFER_DATA( buf );
@@ -138,14 +141,15 @@ void pix_gst2pix :: render(GemState *state)
 
   m_pix.newimage=true;
   // set image
-  state->image = &m_pix;
+  post("image: %dx%d", x_size, y_size);
+  state->set(GemState::_PIX, &m_pix);
 }
 
 //////////
 // get the original state back
 void pix_gst2pix :: postrender(GemState *state){
 #warning LATER store the original pixblock in render() and restore it here 
-  state->image = NULL;//orgPixBlock;
+  state->set(GemState::_PIX, (pixBlock*)NULL); // orgPixBlock
 }
 
 

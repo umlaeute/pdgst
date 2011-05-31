@@ -74,11 +74,14 @@ pix_pix2gst :: ~pix_pix2gst()
 
 void pix_pix2gst :: render(GemState *state)
 {
-  if (!state || !state->image)return;
-  imageStruct*img=&state->image->image;
-  if(NULL==img || NULL==img->data) {
+  if (!state)return;
+  pixBlock*pix=NULL;
+  state->get(GemState::_PIX, pix);
+  if(!pix || !pix->image.data){
     return;
   }
+
+  imageStruct*img=&pix->image;
 
   if(img->xsize!=m_width || img->ysize!=m_height || img->format!=m_format) {
     error("pix does not match %dx%d", m_width, m_height);
