@@ -138,14 +138,23 @@ void pix_gst2pix :: render(GemState *state)
 
   m_pix.newimage=true;
   // set image
+#if (GEM_VERSION_MAJOR > 0) || (GEM_VERSION_MINOR >= 93)
   state->set(GemState::_PIX, &m_pix);
+#else
+  state->image = &m_pix;
+#endif
 }
 
 //////////
 // get the original state back
 void pix_gst2pix :: postrender(GemState *state){
 #warning LATER store the original pixblock in render() and restore it here 
+
+#if (GEM_VERSION_MAJOR > 0) || (GEM_VERSION_MINOR >= 93)
   state->set(GemState::_PIX, (pixBlock*)NULL); // orgPixBlock
+#else
+  state->image = NULL;//orgPixBlock;
+#endif
 }
 
 

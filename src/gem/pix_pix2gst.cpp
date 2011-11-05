@@ -76,12 +76,19 @@ void pix_pix2gst :: render(GemState *state)
 {
   if (!state)return;
   pixBlock*pix=NULL;
+  imageStruct*img=NULL;
+
+#if (GEM_VERSION_MAJOR > 0) || (GEM_VERSION_MINOR >= 93)
   state->get(GemState::_PIX, pix);
+#else
+  pix=state->image,
+#endif
+
   if(!pix || !pix->image.data){
     return;
   }
 
-  imageStruct*img=&pix->image;
+  img=&pix->image;
 
   if(img->xsize!=m_width || img->ysize!=m_height || img->format!=m_format) {
     error("pix does not match %dx%d", m_width, m_height);
