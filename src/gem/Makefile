@@ -12,7 +12,7 @@ GEM_SRC=../../../Gem/src
 PD_SRC=../../../../pd/src
 PDGST_SRC=../../include/
 GST_CFLAGS=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10 gstreamer-0.10)
-GST_LDFLAGS=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10 gstreamer-0.10)
+GST_LIBS=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10 gstreamer-0.10)
 
 #############################################################
 # build gem-external targets and objects
@@ -20,14 +20,14 @@ EXT=pd_linux
 
 SYSTEMCFLAGS = -g -O2 -fPIC
 SYSTEMLIBS = -lc -lm
-SYSTEMLDFLAGS = -rdynamic -shared -o
+SYSTEMLDFLAGS = -fPIC -rdynamic -shared
 SYSTEMINCLUDE =
 SYSTEMOPTCFLAGS=-c -Wall -O2 -fPIC -ffast-math -mmmx
 
 CXXFLAGS = -DPD $(SYSTEMCFLAGS) $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS)
 INCLUDE = -I$(PD_SRC) -I$(GEM_SRC) -I$(GEM_SRC)/deprecated -I. -I$(PDGST_SRC) -I../include $(SYSTEMINCLUDE)
-LDFLAGS = $(SYSTEMLDFLAGS)  $(GST_LDFLAGS) $(GST_PLUGIN_LDFLAGS)
-LIBS=$(SYSTEMLIBS) $(PD_LDFLAGS) $(GEM_LDFLAGS)  $(PDGST_LDFLAGS) $(GST_LDFLAGS)
+LDFLAGS = $(SYSTEMLDFLAGS) $(GST_PLUGIN_LDFLAGS)
+LIBS=$(SYSTEMLIBS) $(PD_LDFLAGS) $(GEM_LDFLAGS) $(PDGST_LDFLAGS) $(GST_LIBS)
 
 EXT=pd_linux
 
@@ -42,7 +42,7 @@ TARGETS := $(SOURCE:.cpp=.$(EXT))
 all: $(TARGETS)
 
 $(TARGETS) : %.$(EXT) : %.o pdgstGem.o
-	$(CXX) $(LDFLAGS) $(LIBS) -o $@ $^
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 pdgstGem.o $(OBJECTS) : %.o : %.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ -c $<
