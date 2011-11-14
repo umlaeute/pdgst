@@ -16,17 +16,24 @@ GST_LDFLAGS=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10 
 
 #############################################################
 # build gem-external targets and objects
+EXT=pd_linux
 
-INCLUDE=-I$(PD_SRC) -I$(GEM_SRC) -I. -I$(PDGST_SRC)
-LIBS=-lc -lm $(PD_LDFLAGS) $(GEM_LDFLAGS)  $(PDGST_LDFLAGS) $(GST_LDFLAGS)
-CC_FLAGS=-c -Wall -O2 -fPIC -ffast-math -mmmx $(GST_CFLAGS)
-LD_FLAGS=--export-dynamic -shared -o
-EXTENSION=pd_linux
+SYSTEMCFLAGS = -g -O2 -fPIC
+SYSTEMLIBS = -lc -lm
+SYSTEMLDFLAGS = -rdynamic -shared -o
+SYSTEMINCLUDE =
+SYSTEMOPTCFLAGS=-c -Wall -O2 -fPIC -ffast-math -mmmx
+
+CXXFLAGS = -DPD $(SYSTEMCFLAGS) $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS)
+INCLUDE = -I$(PD_SRC) -I$(GEM_SRC) -I$(GEM_SRC)/deprecated -I. -I$(PDGST_SRC) -I../include $(SYSTEMINCLUDE)
+LDFLAGS = $(SYSTEMLDFLAGS)  $(GST_LDFLAGS) $(GST_PLUGIN_LDFLAGS)
+LIBS=$(SYSTEMLIBS) $(PD_LDFLAGS) $(GEM_LDFLAGS)  $(PDGST_LDFLAGS) $(GST_LDFLAGS)
+
+EXT=pd_linux
 
 SOURCE := $(wildcard pix_*.cpp)
 OBJECTS := $(SOURCE:.cpp=.o)
-TMP := $(wildcard pix_*.cpp)
-TARGETS := $(TMP:.cpp=.$(EXTENSION))
+TARGETS := $(SOURCE:.cpp=.$(EXT))
 
 .PHONY: default all
 
@@ -34,11 +41,11 @@ TARGETS := $(TMP:.cpp=.$(EXTENSION))
 
 all: $(TARGETS)
 
-$(TARGETS) : %.$(EXTENSION) : %.o pdgstGem.o
-	g++ $(LD_FLAGS) $*.$(EXTENSION) $< pdgstGem.o $(LIBS)
+$(TARGETS) : %.$(EXT) : %.o pdgstGem.o
+	$(CXX) $(LDFLAGS) $(LIBS) -o $@ $^
 
 pdgstGem.o $(OBJECTS) : %.o : %.cpp
-	g++ $(CC_FLAGS) $(INCLUDE) -o "$*.o" -c "$*.cpp"
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ -c $<
 
 
 #############################################################
