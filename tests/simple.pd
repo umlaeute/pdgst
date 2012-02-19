@@ -1,20 +1,14 @@
-#N canvas 0 0 621 526 10;
+#N canvas 4 49 621 526 10;
 #X obj 38 75 pdgst;
-#X msg 43 45 bang;
-#X msg 131 38 start;
-#X msg 128 72 stop;
-#X obj 86 97 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1 1
+#X obj 40 54 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0 1
 ;
-#X obj 142 262 infoprint glimagesink;
-#X obj 142 195 infoprint ffmpegcolorspace;
+#X obj 304 219 infoprint glimagesink;
+#X obj 302 165 infoprint ffmpegcolorspace;
 #X obj 143 170 videotestsrc;
-#X msg 117 106 1;
-#X obj 144 239 xvimagesink @sync 0;
+#X obj 143 219 xvimagesink @sync 0;
+#X msg 163 140 pattern snow;
 #X connect 1 0 0 0;
-#X connect 2 0 0 0;
-#X connect 3 0 0 0;
-#X connect 4 0 0 0;
-#X connect 6 0 9 0;
-#X connect 7 0 6 0;
-#X connect 8 0 4 0;
-#X connect 9 0 5 0;
+#X connect 4 0 5 0;
+#X connect 4 1 3 0;
+#X connect 5 1 2 0;
+#X connect 6 0 4 0;

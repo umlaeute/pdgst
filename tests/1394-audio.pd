@@ -1,19 +1,22 @@
-#N canvas 1381 0 795 643 10;
-#X obj 38 75 pdgst;
-#X obj 38 55 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0 1
+#N canvas 16 49 795 643 10;
+#X obj 38 55 pdgst;
+#X obj 38 35 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0 1
 ;
 #X obj 153 183 dvdemux;
-#X obj 153 113 dv1394src;
-#X obj 213 138 infoprint dv1394src;
+#X obj 153 123 dv1394src;
+#X obj 222 141 infoprint dv1394src;
 #X obj 153 213 audioconvert;
-#X obj 213 235 infoprint audioconvert;
-#X obj 153 269 audioresample;
-#X obj 214 291 infoprint audioresample;
-#X obj 153 330 jackaudiosink;
-#X obj 210 361 infoprint jacksink;
-#X msg 93 324 sync \$1;
-#X obj 93 303 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
+#X obj 222 231 infoprint audioconvert;
+#X obj 153 273 audioresample;
+#X obj 222 291 infoprint audioresample;
+#X obj 153 333 jackaudiosink;
+#X obj 222 351 infoprint jacksink;
+#X msg 433 318 sync \$1;
+#X obj 433 297 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0
 1;
+#X text 156 87 grab a DV-stream \, and output its audio-component via
+jack;
+#X text 75 35 <-- swith ON to start;
 #X connect 1 0 0 0;
 #X connect 2 0 5 0;
 #X connect 3 0 2 0;
