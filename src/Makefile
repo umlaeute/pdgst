@@ -1,5 +1,12 @@
 EXT=pd_linux
 CC=gcc 
+
+## assuming that your filesystem layout is like that:
+### .../pd
+### .../externals/Gem
+### .../externals/pdgst
+## (like the Pd-SVN layout)
+
 PD_SRC=../../../pd/src
 
 vpath %.h ../include/pdgst

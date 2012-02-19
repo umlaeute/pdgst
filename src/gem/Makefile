@@ -1,15 +1,21 @@
 default: all
 #############################################################
-# videoIO makefile
+# pdgst makefile
 #
 # 2008, Georg Holzmann
-# 2008, IOhannes m zmölnig
+# 2008-2012, IOhannes m zmölnig
 #############################################################
 
 -include ../Make.config
 
+## assuming that your filesystem layout is like that:
+### .../pd
+### .../externals/Gem
+### .../externals/pdgst
+## (like the Pd-SVN layout)
+
 GEM_SRC=../../../Gem/src
-PD_SRC=../../../../pd/src
+PD_SRC =../../../../pd/src
 PDGST_SRC=../../include/
 GST_CFLAGS=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10 gstreamer-0.10)
 GST_LIBS=-lgstapp-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10 gstreamer-0.10)
