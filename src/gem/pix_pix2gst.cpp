@@ -81,7 +81,7 @@ void pix_pix2gst :: render(GemState *state)
 #if (GEM_VERSION_MAJOR > 0) || (GEM_VERSION_MINOR >= 93)
   state->get(GemState::_PIX, pix);
 #else
-  pix=state->image,
+  pix=state->image;
 #endif
 
   if(!pix || !pix->image.data){
