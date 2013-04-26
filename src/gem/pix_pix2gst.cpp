@@ -113,7 +113,7 @@ void pix_pix2gst :: render(GemState *state)
 #if 1
   bool upsidedown=img->upsidedown;
   for(i=0; i<img->ysize; i++) {
-    int j=(upsidedown)?i:(img->ysize-i);
+    int j=(upsidedown)?i:(img->ysize-i-1);
     unsigned char*linein =    data +j*linelength;
     unsigned char*lineout=rec_data +i*linelengthO;
 
