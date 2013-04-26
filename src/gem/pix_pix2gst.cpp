@@ -37,6 +37,9 @@ pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h)  : pdgstGem(
   m_width=w;
   m_height=h;
 
+  m_fps_numerator = 20;
+  m_fps_denominator = 1;
+
   GstCaps*caps=color2caps(s);
   m_format=m_image->format;
   if(caps) {
@@ -44,7 +47,7 @@ pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h)  : pdgstGem(
     gst_caps_set_simple (caps,
                          "width", G_TYPE_INT, m_width,
                          "height", G_TYPE_INT, m_height,
-                         "framerate", GST_TYPE_FRACTION, 20, 1,
+                         "framerate", GST_TYPE_FRACTION, m_fps_numerator, m_fps_denominator,
                          NULL);
     verbose(1, "pix2gst caps: %s", gst_caps_to_string (caps) );
 
