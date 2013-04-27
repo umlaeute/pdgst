@@ -18,7 +18,7 @@
 #include <gst/base/gstadapter.h>
 
 
-CPPEXTERN_NEW_WITH_THREE_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT)
+CPPEXTERN_NEW_WITH_THREE_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT);
 
 /////////////////////////////////////////////////////////
 //

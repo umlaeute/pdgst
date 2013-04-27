@@ -18,7 +18,7 @@
 #include <gst/base/gstadapter.h>
 
 
-CPPEXTERN_NEW_WITH_ONE_ARG(pix_gst2pix, t_symbol*, A_SYMBOL)
+CPPEXTERN_NEW_WITH_ONE_ARG(pix_gst2pix, t_symbol*, A_SYMBOL);
 
 /////////////////////////////////////////////////////////
 //
