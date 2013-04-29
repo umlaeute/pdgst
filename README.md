@@ -15,9 +15,12 @@ systems (like OSX or w32).
 PdGst needs both GStreamer and Pure Data installed with all the development
 headers. You might also want to have the development headers for Gem
 installed.
-on debian you might want to do something like the following (as root)
+on debian and friends (e.g. ubuntu) you might want to do something like the
+following (as root):
     # aptitude install puredata-dev gem-dev
     # aptitude install libgstreamer0.10-dev libgstreamer-plugins-base0.10-dev
+you could also use `apt-get` instead of `aptitude`
+
 
 build
 -----
