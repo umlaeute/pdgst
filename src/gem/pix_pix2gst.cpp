@@ -18,7 +18,7 @@
 #include <gst/base/gstadapter.h>
 
 
-CPPEXTERN_NEW_WITH_THREE_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT)
+CPPEXTERN_NEW_WITH_FOUR_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT)
 
 /////////////////////////////////////////////////////////
 //
@@ -28,16 +28,17 @@ CPPEXTERN_NEW_WITH_THREE_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FL
 // Constructor
 //
 /////////////////////////////////////////////////////////
-pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h)  : pdgstGem("appsrc"),
-                                                                       m_width(0), m_height(0), m_format(-1)
+pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h, t_floatarg fps)  : pdgstGem("appsrc"),
+                                                                       m_width(0), m_height(0), m_fps_numerator(0), m_format(-1)
 {
   if(w<0)w=128;
   if(h<0)h=128;
-
+  if(fps<0)fps=20;
+  
   m_width=w;
   m_height=h;
 
-  m_fps_numerator = 20;
+  m_fps_numerator = fps;
   m_fps_denominator = 1;
 
   GstCaps*caps=color2caps(s);

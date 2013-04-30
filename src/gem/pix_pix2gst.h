@@ -33,7 +33,7 @@ class GEM_EXTERN pix_pix2gst : public pdgstGem
     
     //////////
     // Constructor
-  pix_pix2gst(t_symbol*, t_floatarg, t_floatarg);
+  pix_pix2gst(t_symbol*, t_floatarg, t_floatarg, t_floatarg);
 
   protected:
     
