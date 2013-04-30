@@ -129,7 +129,7 @@ void pix_pix2gst :: render(GemState *state)
   }
 #endif
 
-
+  g_object_set (source, "do-timestamp", TRUE, NULL);
   gst_app_src_push_buffer (source, buf);
 }
 
