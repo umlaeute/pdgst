@@ -18,10 +18,10 @@ SOURCES=$(sort $(filter %.c, $(wildcard *.c */*.c)))
 TARGETS = $(SOURCES:.c=.o)
 
 GST_CFLAGS=$(shell pkg-config --cflags gstreamer-0.10)
-GST_LDFLAGS=$(shell pkg-config --libs gstreamer-0.10)
+GST_LIBS=$(shell pkg-config --libs gstreamer-0.10)
 
 GST_PLUGIN_CFLAGS=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10)
-GST_PLUGIN_LDFLAGS=-lgstapp-0.10 -lgstaudio-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10)
+GST_PLUGIN_LIBS=-lgstapp-0.10 -lgstaudio-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10)
 
 # ----------------------- LINUX i386 -----------------------
 
@@ -29,12 +29,13 @@ GST_PLUGIN_LDFLAGS=-lgstapp-0.10 -lgstaudio-0.10 $(shell pkg-config --libs gstre
 
 LINUXCFLAGS = -g -O2 -fPIC -DPD $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS) $(CFLAGS)
 LINUXINCLUDE =  -I$(PD_SRC) -I../include
-LINUXLDFLAGS = -lc -lm  $(GST_LDFLAGS) $(GST_PLUGIN_LDFLAGS)
+LIBS = -lc -lm  $(GST_LIBS) $(GST_PLUGIN_LIBS)
+LDFLAGS=-shared
 
 $(EXT): $(NAME).$(EXT)
 
 $(NAME).$(EXT): $(TARGETS)
-	$(CC) -shared $(LINUXLDFLAGS) -o $*.$(EXT) $^
+	$(CC) $(LDFLAGS) -o $*.$(EXT) $^ $(LIBS)
 
 $(TARGETS): %.o : %.c pdgst.h Makefile
 	$(CC) $(LINUXCFLAGS) $(LINUXINCLUDE) -o $*.o -c $*.c
