@@ -16,7 +16,14 @@ SHARED_SOURCE =  \
 	setup.c \
 	pdgst_adc~.c pdgst_dac~.c
 
-GSTGEM_OBJECTS = pdgstGem.o
+SHARED_HEADER = \
+	include/pdgst/element.h \
+	include/pdgst/properties.h \
+	include/pdgst/pdgst.h
+
+
+GSTGEM_SOURCES = pdgstGem.cpp
+GSTGEM_HEADERS = pdgstGem.h pix_gst2pix.h pix_pix2gst.h
 
 SHARED_LIB = libpdgst.$(SHARED_EXTENSION)
 ## shared lib for gst/gem is handled explicitely
@@ -56,20 +63,27 @@ GST_LIBS=$(shell pkg-config --libs gstreamer-0.10)
 GST_PLUGIN_CFLAGS=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10)
 GST_PLUGIN_LIBS=-lgstapp-0.10 -lgstaudio-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10)
 
-ALL_CFLAGS = -I"$(PD_INCLUDE)" -I"$(GEM_INCLUDE)" -Iinclude/ $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS)
+ALL_CFLAGS = -I"$(PD_INCLUDE)" -I"$(GEM_INCLUDE)" -Iinclude/ -Isrc/ $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS)
 ALL_LDFLAGS =  
 SHARED_LDFLAGS =
 ALL_LIBS = $(GST_LIBS) $(GST_PLUGIN_LIBS)
 
-#VPATH=src
-#VPATH=src:src/audio:src/gem
+## where to find the source-files
 vpath %.h include
 vpath %.c src
 vpath %.c src/audio
 vpath %.cpp src/gem
+vpath %.h   src/gem
 
-OFILES=$(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SOURCES) $(SHARED_SOURCE))) $(GSTGEM_OBJECTS)
-EXTFILES=$(patsubst %.c,%.$(EXTENSION),$(patsubst %.cpp,%.$(EXTENSION),$(SOURCES)))
+## where to find the source-files (dist)
+vpath %.cpp src
+vpath %.h   src
+vpath %.h   src/pdgst
+
+GSTGEM_OBJECTS=$(GSTGEM_SOURCES:%.cpp=%.o)
+EXTERNALS=$(patsubst %.c,%,$(patsubst %.cpp,%,$(SOURCES)))
+OFILES=$(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SHARED_SOURCE))) $(GSTGEM_OBJECTS) $(EXTERNALS:=.o)
+EXTFILES=$(EXTERNALS:=.$(EXTENSION))
 
 
 #------------------------------------------------------------------------------#
@@ -102,7 +116,9 @@ INSTALL_DATA = $(INSTALL) -p -m 644
 INSTALL_DIR     = $(INSTALL) -p -m 755 -d
 
 ALLSOURCES := $(SOURCES) $(SOURCES_android) $(SOURCES_cygwin) $(SOURCES_macosx) \
-	         $(SOURCES_iphoneos) $(SOURCES_linux) $(SOURCES_windows)
+	         $(SOURCES_iphoneos) $(SOURCES_linux) $(SOURCES_windows) \
+           $(GSTGEM_SOURCES) $(GSTGEM_HEADERS) \
+           $(SHARED_SOURCE)
 
 DISTDIR=$(LIBRARY_NAME)-$(LIBRARY_VERSION)
 ORIGDIR=pd-$(LIBRARY_NAME:~=)_$(LIBRARY_VERSION)
@@ -273,7 +289,7 @@ endif
 GEM_PATH=$(PD_PATH)
 
 # in case somebody manually set the HELPPATCHES above
-HELPPATCHES ?= $(SOURCES:.c=-help.pd) $(PDOBJECTS:.pd=-help.pd)
+HELPPATCHES ?= $(EXTERNALS:=-help.pd) $(PDOBJECTS:.pd=-help.pd)
 
 ALL_CFLAGS := $(ALL_CFLAGS) $(CFLAGS) $(OPT_CFLAGS)
 ALL_LDFLAGS := $(LDFLAGS) $(ALL_LDFLAGS)
@@ -284,7 +300,11 @@ SHARED_HEADER ?= $(shell test ! -e $(LIBRARY_NAME).h || echo $(LIBRARY_NAME).h)
 SHARED_LIB ?= $(SHARED_SOURCE:.c=.$(SHARED_EXTENSION))
 SHARED_TCL_LIB = $(wildcard lib$(LIBRARY_NAME).tcl)
 
-.PHONY = install libdir_install single_install install-doc install-examples install-manual install-unittests clean distclean dist etags $(LIBRARY_NAME)
+.PHONY = install libdir_install install-doc install-examples install-manual install-unittests \
+	clean distclean \
+	dist dist-src dist-headers dist-help \
+	etags etags-pd etags-src etags-tcl \
+	$(LIBRARY_NAME)
 
 all: $(EXTFILES) $(SHARED_LIB)
 
@@ -302,12 +322,6 @@ all: $(EXTFILES) $(SHARED_LIB)
 pix_pix2gst.$(EXTENSION): $(GSTGEM_OBJECTS)
 pix_gst2pix.$(EXTENSION): $(GSTGEM_OBJECTS)
 
-# this links everything into a single binary file
-$(LIBRARY_NAME): $(SOURCES:.c=.o) $(LIBRARY_NAME).o lib$(LIBRARY_NAME).o
-	$(CC) $(ALL_LDFLAGS) -o $(LIBRARY_NAME).$(EXTENSION) $(SOURCES:.c=.o) \
-		$(LIBRARY_NAME).o lib$(LIBRARY_NAME).o $(ALL_LIBS)
-	chmod a-x $(LIBRARY_NAME).$(EXTENSION)
-
 $(SHARED_LIB): $(SHARED_SOURCE:.c=.o)
 	$(CC) $(SHARED_LDFLAGS) -o $(SHARED_LIB) $(SHARED_SOURCE:.c=.o) $(ALL_LIBS)
 
@@ -315,13 +329,13 @@ install: libdir_install
 
 # The meta and help files are explicitly installed to make sure they are
 # actually there.  Those files are not optional, then need to be there.
-libdir_install: $(SOURCES:.c=.$(EXTENSION)) $(SHARED_LIB) install-doc install-examples install-manual install-unittests
+libdir_install: $(EXTFILES) $(SHARED_LIB) install-doc install-examples install-manual install-unittests
 	$(INSTALL_DIR) $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
 	$(INSTALL_DATA) $(LIBRARY_NAME)-meta.pd \
 		$(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
-	test -z "$(strip $(SOURCES))" || (\
-		$(INSTALL_PROGRAM) $(SOURCES:.c=.$(EXTENSION)) $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME) && \
-		$(STRIP) $(addprefix $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)/,$(SOURCES:.c=.$(EXTENSION))))
+	test -z "$(strip $(EXTFILES))" || (\
+		$(INSTALL_PROGRAM) $(EXTFILES) $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME) && \
+		$(STRIP) $(addprefix $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)/,$(EXTFILES)))
 	test -z "$(strip $(SHARED_LIB))" || \
 		$(INSTALL_DATA) $(SHARED_LIB) \
 			$(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
@@ -335,15 +349,9 @@ libdir_install: $(SOURCES:.c=.$(EXTENSION)) $(SHARED_LIB) install-doc install-ex
 		$(INSTALL_DATA) $(SHARED_TCL_LIB) \
 			$(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
 
-# install library linked as single binary
-single_install: $(LIBRARY_NAME) install-doc install-examples install-manual install-unittests
-	$(INSTALL_DIR) $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
-	$(INSTALL_PROGRAM) $(LIBRARY_NAME).$(EXTENSION) $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
-	$(STRIP) $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)/$(LIBRARY_NAME).$(EXTENSION)
-
 install-doc:
 	$(INSTALL_DIR) $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
-	test -z "$(strip $(SOURCES) $(PDOBJECTS))" || \
+	test -z "$(strip $(HELPPATCHES))" || \
 		$(INSTALL_DATA) $(HELPPATCHES) \
 			$(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)
 	$(INSTALL_DATA) README.md $(DESTDIR)$(objectsdir)/$(LIBRARY_NAME)/README.md
@@ -389,9 +397,12 @@ distclean: clean
 $(DISTBINDIR):
 	$(INSTALL_DIR) $(DISTBINDIR)
 
-libdir: all $(DISTBINDIR)
+libdir-src: $(ALLSOURCES)
+	$(INSTALL_DIR) $(DISTBINDIR)/src
+	$(INSTALL_DATA) $^ $(DISTBINDIR)/src
+
+libdir: all $(DISTBINDIR) libdir-src
 	$(INSTALL_DATA) $(LIBRARY_NAME)-meta.pd  $(DISTBINDIR)
-	$(INSTALL_DATA) $(SOURCES) $(SHARED_SOURCE) $(SHARED_HEADER) $(DISTBINDIR)
 	$(INSTALL_DATA) $(HELPPATCHES) $(DISTBINDIR)
 	test -z "$(strip $(EXTRA_DIST))" || \
 		$(INSTALL_DATA) $(EXTRA_DIST)    $(DISTBINDIR)
@@ -403,27 +414,36 @@ $(DISTDIR):
 $(ORIGDIR):
 	$(INSTALL_DIR) $(ORIGDIR)
 
-dist: $(DISTDIR)
+dist-headers: $(SHARED_HEADER)
+	@echo $^
+	$(INSTALL_DIR) $(DISTDIR)/src/pdgst && \
+	$(INSTALL_DATA) $^ \
+	  $(DISTDIR)/src/pdgst
+
+dist-src: $(ALLSOURCES)
+	test -z "$^" || \
+		$(INSTALL_DIR) $(DISTDIR)/src && \
+		$(INSTALL_DATA) $^ \
+			$(DISTDIR)/src
+
+dist-help: $(HELPPATCHES)
+	test -z "$^" || \
+		$(INSTALL_DATA) $^ \
+			$(DISTDIR)
+
+dist: $(DISTDIR) dist-src dist-headers dist-help
 	$(INSTALL_DATA) Makefile  $(DISTDIR)
 	$(INSTALL_DATA) README.md $(DISTDIR)
 	$(INSTALL_DATA) LICENSE.txt $(DISTDIR)
 	$(INSTALL_DATA) $(LIBRARY_NAME)-meta.pd  $(DISTDIR)
-	test -z "$(strip $(ALLSOURCES))" || \
-		$(INSTALL_DATA) $(ALLSOURCES)  $(DISTDIR)
 	test -z "$(strip $(wildcard $(ALLSOURCES:.c=.tcl)))" || \
 		$(INSTALL_DATA) $(wildcard $(ALLSOURCES:.c=.tcl))  $(DISTDIR)
 	test -z "$(strip $(wildcard $(LIBRARY_NAME).c))" || \
 		$(INSTALL_DATA) $(LIBRARY_NAME).c  $(DISTDIR)
-	test -z "$(strip $(SHARED_HEADER))" || \
-		$(INSTALL_DATA) $(SHARED_HEADER)  $(DISTDIR)
-	test -z "$(strip $(SHARED_SOURCE))" || \
-		$(INSTALL_DATA) $(SHARED_SOURCE)  $(DISTDIR)
 	test -z "$(strip $(SHARED_TCL_LIB))" || \
 		$(INSTALL_DATA) $(SHARED_TCL_LIB)  $(DISTDIR)
 	test -z "$(strip $(PDOBJECTS))" || \
 		$(INSTALL_DATA) $(PDOBJECTS)  $(DISTDIR)
-	test -z "$(strip $(HELPPATCHES))" || \
-		$(INSTALL_DATA) $(HELPPATCHES) $(DISTDIR)
 	test -z "$(strip $(EXTRA_DIST))" || \
 		$(INSTALL_DATA) $(EXTRA_DIST)    $(DISTDIR)
 	test -z "$(strip $(EXAMPLES))" || \
@@ -455,10 +475,14 @@ dpkg-source:
 
 etags: TAGS
 
-TAGS: $(wildcard $(PD_INCLUDE)/*.h) $(SOURCES) $(SHARED_SOURCE) $(SHARED_HEADER)
-	etags $(wildcard $(PD_INCLUDE)/*.h)
-	etags -a *.h $(SOURCES) $(SHARED_SOURCE) $(SHARED_HEADER)
+etags-pd: $(wildcard $(PD_INCLUDE)/*.h)
+	etags $^
+etags-source: $(ALLSOURCES) $(SHARED_HEADER)
+	etags -a *.h $^
+etags-tcl:
 	etags -a --language=none --regex="/proc[ \t]+\([^ \t]+\)/\1/" *.tcl
+
+TAGS: etags-pd etags-source etags-tcl
 
 showsetup:
 	@echo "CC: $(CC)"
