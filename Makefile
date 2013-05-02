@@ -11,9 +11,9 @@ SOURCES = pdgst.c \
 	pix_gst2pix.cpp pix_pix2gst.cpp
 
 SHARED_SOURCE =  \
+	libpdgst.c \
 	pdgst_base.c pdgst_capsfilter.c pdgst_element.c \
 	gvalue.c loop.c pdgst.c properties.c \
-	setup.c \
 	pdgst_adc~.c pdgst_dac~.c
 
 SHARED_HEADER = \
