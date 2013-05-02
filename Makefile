@@ -63,7 +63,7 @@ GST_LIBS=$(shell pkg-config --libs gstreamer-0.10)
 GST_PLUGIN_CFLAGS=-DPDGST_PLUGIN $(shell pkg-config --cflags gstreamer-plugins-base-0.10)
 GST_PLUGIN_LIBS=-lgstapp-0.10 -lgstaudio-0.10 $(shell pkg-config --libs gstreamer-plugins-base-0.10)
 
-ALL_CFLAGS = -I"$(PD_INCLUDE)" -I"$(GEM_INCLUDE)" -Iinclude/ -Isrc/ $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS)
+ALL_CFLAGS = -I"$(PD_INCLUDE)" -I"$(GEM_INCLUDE)" -I"$(GEM_INCLUDE)/deprecated" -Iinclude/ -Isrc/ $(GST_CFLAGS) $(GST_PLUGIN_CFLAGS)
 ALL_LDFLAGS =  
 SHARED_LDFLAGS =
 ALL_LIBS = $(GST_LIBS) $(GST_PLUGIN_LIBS)
