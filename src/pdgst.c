@@ -34,6 +34,14 @@
 
 #define PDGST_CAPSFILTER
 
+
+
+t_symbol*s_pdgst__gst=NULL;
+t_symbol*s_pdgst__gst_source=NULL;
+t_symbol*s_pdgst__gst_filter=NULL;
+t_symbol*s_pdgst__gst_sink=NULL;
+
+
 static GstElement *s_pipeline=NULL;
 
 static t_class*pdgst_class=NULL;
@@ -377,10 +385,22 @@ static int pdgst_loader(t_canvas *canvas, char *classname)
   return (0);
 }
 
-int pdgst_loader_init(void)
-{
+static int pdgst_doinit(void) {
   GError *err = NULL;
   guint major=0, minor=0, micro=0, nano=0;
+
+
+  if(!s_pdgst__gst) {
+    const char*_gst_="__gst";
+    char buf[MAXPDSTRING];
+    s_pdgst__gst=gensym(_gst_);;
+    snprintf(buf, MAXPDSTRING-1, "%s_source", _gst_); buf[MAXPDSTRING-1]=0;
+    s_pdgst__gst_source=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_filter", _gst_); buf[MAXPDSTRING-1]=0;
+    s_pdgst__gst_filter=gensym(buf);
+    snprintf(buf, MAXPDSTRING-1, "%s_sink", _gst_); buf[MAXPDSTRING-1]=0;
+    s_pdgst__gst_sink=gensym(buf);
+  }
 
   /* initialize gstreamer */
   if (!gst_init_check(NULL, NULL, &err)) {
@@ -404,10 +424,28 @@ int pdgst_loader_init(void)
     return 0;
   }
 
-  s_pipeline=gst_pipeline_new(NULL);
-
-  sys_register_loader(pdgst_loader);
   return 1;
+}
+
+int pdgst_init(void) {
+  static int already=0;
+  if(already)return 1;
+  pdgst_pushlocale();
+  already=pdgst_doinit();
+  if(already) {
+    g_set_prgname ("pdgst");
+    s_pipeline=gst_pipeline_new(NULL);
+    sys_register_loader(pdgst_loader);
+    pdgst_loop_setup();
+  }
+  pdgst_poplocale();
+  return already;
+}
+
+
+int pdgst_loader_init(void)
+{
+  return pdgst_init();
 }
 
 
@@ -443,4 +481,7 @@ void pdgst__setup(void)
 
   class_addmethod  (pdgst_class, (t_method)pdgst__save, gensym("save"), A_SYMBOL, 0);
 
+}
+t_symbol*pdgst_privatesymbol(void) {
+  return gensym("__gst");
 }

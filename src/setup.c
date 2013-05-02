@@ -21,13 +21,6 @@
 
 #include "pdgst/pdgst.h"
 
-t_symbol*s_pdgst__gst=NULL;
-t_symbol*s_pdgst__gst_source=NULL;
-t_symbol*s_pdgst__gst_filter=NULL;
-t_symbol*s_pdgst__gst_sink=NULL;
-
-
-
 void  pdgst__setup(void);
 void  pdgst_dac_tilde_setup(void);
 
@@ -45,41 +38,15 @@ void pdgst_objects_setup(void){
 
 void pdgst_setup(void)
 {
-  char*locale=NULL;
-  int err=0;
-
-  if(!s_pdgst__gst) {
-    const char*_gst_="__gst";
-    char buf[MAXPDSTRING];
-    s_pdgst__gst=gensym(_gst_);;
-    snprintf(buf, MAXPDSTRING-1, "%s_source", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_source=gensym(buf);
-    snprintf(buf, MAXPDSTRING-1, "%s_filter", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_filter=gensym(buf);
-    snprintf(buf, MAXPDSTRING-1, "%s_sink", _gst_); buf[MAXPDSTRING-1]=0;
-    s_pdgst__gst_sink=gensym(buf);
-  }
-
   post("pdgst %s",pdgst_version);  
   post("\t(copyleft) IOhannes m zmoelnig @ IEM / KUG");
   post("\tcompiled on "__DATE__" at "__TIME__ " ");
   post("\tcompiled against Pd version %d.%d.%d.%s", PD_MAJOR_VERSION, PD_MINOR_VERSION, PD_BUGFIX_VERSION, PD_TEST_VERSION);
 
-  pdgst_pushlocale();
-  err=pdgst_loader_init();
-  //  g_set_application_name ("pdgst");
-  g_set_prgname ("pdgst");
-  if(err){
-    pdgst_loop_setup();
+  if(pdgst_init()) {
     pdgst_objects_setup();
   }
-  pdgst_poplocale();
 }
-
-t_symbol*pdgst_privatesymbol(void) {
- return gensym("__gst");
-}
-
 
 
 /*
