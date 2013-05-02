@@ -16,19 +16,21 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include "pdgstGem.h"
-
+#include "Gem/Exception.h"
 #ifdef x_obj
 # undef x_obj
 #endif
 
 pdgstGem :: pdgstGem(const char*name)
 {
+  if(!pdgst_init()) {
+    throw(GemException("PdGst failed to initialize"));
+  }
 
   m_image=&m_pix.image;
   m_image->xsize=0;
   m_image->ysize=0;
   m_image->reallocate();
-
 
   m_base = (t_pdgst_base*)getbytes(sizeof(t_pdgst_base));
   m_base->l_obj=*(this->x_obj);
