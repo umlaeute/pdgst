@@ -95,10 +95,6 @@ void pdgst_loop_setup(void);
 void pdgst_loop_flush(void);
 
 
-/* from nowhere */
-static const char *pdgst_version = "$Revision: 0.0 $";
-
-
 extern t_symbol*s_pdgst__gst;
 extern t_symbol*s_pdgst__gst_source;
 extern t_symbol*s_pdgst__gst_filter;

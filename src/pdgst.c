@@ -38,7 +38,11 @@ void pdgst_objects_setup(void){
 
 void pdgst_setup(void)
 {
-  post("pdgst %s",pdgst_version);  
+#ifdef VERSION
+  post("pdgst ver%s", VERSION);
+#else
+  post("pdgst");
+#endif
   post("\t(copyleft) IOhannes m zmoelnig @ IEM / KUG");
   post("\tcompiled on "__DATE__" at "__TIME__ " ");
   post("\tcompiled against Pd version %d.%d.%d.%s", PD_MAJOR_VERSION, PD_MINOR_VERSION, PD_BUGFIX_VERSION, PD_TEST_VERSION);
