@@ -93,7 +93,7 @@ EXTFILES=$(EXTERNALS:=.$(EXTENSION))
 #------------------------------------------------------------------------------#
 
 # these can be set from outside without (usually) breaking the build
-CFLAGS = -Wall -W -g
+CFLAGS = -Wall -W -g -Wno-unused
 LDFLAGS =
 LIBS =
 
