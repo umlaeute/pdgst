@@ -224,7 +224,10 @@ void pdgst_base__setParam(t_pdgst_base*x, t_pdgst_property*prop, t_atom*ap)
     if(pdgst__atom2gvalue(ap, &v)) {
       g_object_set_property(G_OBJECT (element), prop->name->s_name, &v);
     } else {
-      pd_error(x, "hmm, couldn't create GValue from atom");
+      if(A_SYMBOL==ap->a_type) {
+	gst_util_set_object_arg(G_OBJECT (element), prop->name->s_name, ap->a_w.w_symbol->s_name);
+      } else
+	pd_error(x, "hmm, couldn't create GValue from atom");
     }
 
     g_value_unset (&v);
