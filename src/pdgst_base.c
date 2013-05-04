@@ -238,7 +238,7 @@ static void pdgst_base__taglist_foreach(const GstTagList *list, const gchar *tag
   t_pdgst_base*x=(t_pdgst_base*)x0;
   int index=0;
   const GValue*v=NULL;
-  while(v=gst_tag_list_get_value_index(list, tag, index)) {
+  while(NULL!=(v=gst_tag_list_get_value_index(list, tag, index))) {
     t_atom ap[3];
 
     SETSYMBOL(ap+0, gensym("tag"));

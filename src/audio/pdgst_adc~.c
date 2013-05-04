@@ -30,7 +30,8 @@ static t_class *pdgst_adc_class;
 typedef struct _pdgst_adc
 {
   t_pdgst_base x_elem;
-  int x_channels; /* #channels */
+  unsigned int x_channels; /* #channels */
+  unsigned int x_n;        /* samples per block */
   t_sample x_f; /* should this be t_sample or t_float? */
 
   t_pdgst_property*x_props;
@@ -38,15 +39,15 @@ typedef struct _pdgst_adc
 } t_pdgst_adc;
 
 static t_int*pdgst_adc_perform(t_int*w){
-  int offset = 3;
+  unsigned int offset = 2;
   t_pdgst_adc* x = (t_pdgst_adc*) (w[1]);
-  int n = (int)(w[2]);
+  unsigned int n = x->x_n;
   t_sample **out = getbytes(sizeof(t_sample)*x->x_channels);
-  int i,j;
+  unsigned int i,j;
 
   GstBuffer*buf=NULL;
-  int buffersize=sizeof(t_sample)*x->x_channels*n;
-  int availablesize=0;
+  unsigned int buffersize=sizeof(t_sample)*x->x_channels*n;
+  unsigned int availablesize=0;
   GstAppSink*sink=GST_APP_SINK(x->x_element);
 
   for (i=0;i < x->x_channels;i++) {
@@ -90,18 +91,18 @@ static t_int*pdgst_adc_perform(t_int*w){
 
 
 static void pdgst_adc_dsp(t_pdgst_adc *x, t_signal **sp){
-  int i;
-  t_int** myvec = getbytes(sizeof(t_int*)*(x->x_channels + 3));
+  unsigned int i;
+  t_int** myvec = getbytes(sizeof(t_int*)*(x->x_channels + 2));
 
   myvec[0] = (t_int*)x;
-  myvec[1] = (t_int*)sp[0]->s_n;
+  x->x_n = sp[0]->s_n;
 
   for (i=0; i<x->x_channels; i++) {
-    myvec[2 + i] = (t_int*)sp[i]->s_vec;
+    myvec[1 + i] = (t_int*)sp[i]->s_vec;
   }
 
-  dsp_addv(pdgst_adc_perform, x->x_channels + 3, (t_int*)myvec);
-  freebytes(myvec,sizeof(t_int)*(x->x_channels + 3));
+  dsp_addv(pdgst_adc_perform, x->x_channels + 2, (t_int*)myvec);
+  freebytes(myvec,sizeof(t_int)*(x->x_channels + 2));
 }
 
 static void pdgst_adc_any(t_pdgst_adc*x, t_symbol*s, int argc, t_atom*argv) {
@@ -135,8 +136,8 @@ static void pdgst_adc_free(t_pdgst_adc*x) {
 }
 
 static void*pdgst_adc_new(t_floatarg f) {
-  gint channels=f;
-  int i=0;
+  guint channels=f;
+  guint i=0;
   GstAppSink*sink=NULL;
   GstCaps*caps=NULL;
   t_pdgst_adc*x=(t_pdgst_adc*)pd_new(pdgst_adc_class);
@@ -149,7 +150,7 @@ static void*pdgst_adc_new(t_floatarg f) {
     error("max.number of channels is %d", MAXPDCHANNELS);
   }
   x->x_channels=channels;
-
+  x->x_n = 64;
 
   pdgst_base__new(&x->x_elem, gensym("appsink"), NULL);
 

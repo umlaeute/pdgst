@@ -159,7 +159,7 @@ static void pdgst_dac_free(t_pdgst_dac*x) {
 
 static void*pdgst_dac_new(t_floatarg f) {
   gint channels=f;
-  int i=0;
+  guint i=0;
   GstAppSrc*src=NULL;
   GstCaps*caps=NULL;
   t_pdgst_dac*x=(t_pdgst_dac*)pd_new(pdgst_dac_class);
@@ -170,7 +170,7 @@ static void*pdgst_dac_new(t_floatarg f) {
   if(channels<1)
     channels=2;
   if(channels>MAXPDCHANNELS){
-    error("max.number of channels is %d", MAXPDCHANNELS);
+    error("max.number of channels is %d (requested %d)", MAXPDCHANNELS, channels);
   }
   x->x_channels=channels;
 
