@@ -17,6 +17,9 @@
 
 #include "pdgstGem.h"
 #include "Gem/Exception.h"
+
+#include <algorithm>
+
 #ifdef x_obj
 # undef x_obj
 #endif
@@ -70,20 +73,24 @@ pdgstGem :: ~pdgstGem()
 //
 // set the colorspace 
 /////////////////////////////////////////////////////////
-GstCaps*pdgstGem :: color2caps(t_symbol*color) {
+GstCaps*pdgstGem :: color2caps(t_symbol*colorsym) {
   int cs=GL_RGBA_GEM;
+  std::string color="rgba";
+  if(colorsym && colorsym->s_name)
+    color=colorsym->s_name;
+  std::transform(color.begin(), color.end(), color.begin(), ::tolower);
 
-  if(gensym("rgba")==color) {
+  if("rgba"==color) {
     cs=GL_RGBA_GEM;
-  } else if(gensym("yuv")==color) {
+  } else if("yuv"==color) {
     cs=GL_YUV422_GEM;
-  } else if(gensym("grey")==color) {
+  } else if("grey"==color) {
     cs=GL_LUMINANCE;
-  } else if(gensym("gray")==color) {
+  } else if("gray"==color) {
     cs=GL_LUMINANCE;
-  } else if(color&&gensym("")==color) {
+  } else if(""==color) {
   } else {
-    error("unknown colorspace '%s'", color->s_name);
+    error("unknown colorspace '%s'", color.c_str());
     cs=GL_RGBA_GEM;
   }
 
