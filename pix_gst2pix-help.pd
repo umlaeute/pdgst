@@ -1,0 +1,57 @@
+#N canvas 1 433 564 474 10;
+#X declare -lib pdgst -lib Gem;
+#X obj 54 362 declare -lib pdgst -lib Gem;
+#X obj 74 237 cnv 15 120 30 empty empty empty 20 12 0 14 -4034 -66577
+0;
+#X obj 72 177 cnv 15 120 30 empty empty empty 20 12 0 14 -233017 -66577
+0;
+#X obj 79 184 gemhead 50;
+#X obj 67 90 cnv 15 100 60 empty empty 1:startGem 10 12 0 14 -233017
+-66577 0;
+#N canvas 1 51 671 312 gemwin 0;
+#X obj 168 103 tgl 15 0 \$0-gemwin \$0-gemwin empty 17 7 0 10 -262144
+-1 -1 1 1;
+#X obj 248 100 r \$0-gemwin;
+#X obj 248 122 select 1 0;
+#X obj 248 166 gemwin;
+#X obj 404 88 inlet;
+#X msg 467 97 reset \, dimen 320 240;
+#X obj 467 75 loadbang;
+#X msg 248 144 create \, 1;
+#X msg 310 166 0 \, destroy;
+#X connect 1 0 2 0;
+#X connect 2 0 7 0;
+#X connect 2 1 8 0;
+#X connect 4 0 3 0;
+#X connect 5 0 3 0;
+#X connect 6 0 5 0;
+#X connect 7 0 3 0;
+#X connect 8 0 3 0;
+#X coords 0 -1 1 1 85 25 1 100 100;
+#X restore 76 119 pd gemwin;
+#X obj 267 90 cnv 15 100 60 empty empty 2:startGSt 10 12 0 14 -203904
+-66577 0;
+#X obj 288 129 pdgst;
+#X obj 288 110 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
+1;
+#X text 251 364 (c) 2013 IOhannes m zmölnig;
+#X text 215 245 arguments: <colorspace>;
+#X text 30 48 [pix_gst2pix] bridge between GStreamer and Gem-Pixes
+;
+#X obj 79 242 pix_gst2pix yuv;
+#X obj 72 277 cnv 15 120 60 empty empty empty 20 12 0 14 -233017 -66577
+0;
+#X obj 79 287 pix_texture;
+#X obj 79 309 rectangle 4 3;
+#X text 200 233 makes a gstreamer video-stream available as a pix.
+;
+#X obj 235 160 cnv 15 150 60 empty empty empty 10 12 0 14 -203904 -66577
+0;
+#X obj 246 170 videotestsrc;
+#X obj 246 192 ffmpegcolorspace;
+#X connect 3 0 12 0;
+#X connect 8 0 7 0;
+#X connect 12 0 14 0;
+#X connect 14 0 15 0;
+#X connect 18 0 19 0;
+#X connect 19 0 12 0;

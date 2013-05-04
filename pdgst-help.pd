@@ -1,0 +1,21 @@
+#N canvas 1 433 564 365 10;
+#X declare -lib pdgst;
+#X obj 37 100 cnv 15 100 60 empty empty empty 10 12 0 14 -4034 -66577
+0;
+#X obj 58 129 pdgst;
+#X obj 58 110 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
+1;
+#X text 251 324 (c) 2013 IOhannes m zmölnig;
+#X obj 35 190 cnv 15 150 80 empty empty empty 10 12 0 14 -203904 -66577
+0;
+#X obj 46 200 videotestsrc;
+#X obj 46 222 ffmpegcolorspace;
+#X obj 46 244 autovideosink;
+#X text 30 48 [pdgst] control GStreamer pipeline from within Pd;
+#X text 200 201 simple GStreamer pipeline;
+#X text 211 229 videotestsrc ! ffmpegcolorspace ! autovideosink;
+#X obj 54 322 declare -lib pdgst;
+#X text 144 107 1/0 ... start/stop Gstreamer;
+#X connect 2 0 1 0;
+#X connect 5 0 6 0;
+#X connect 6 0 7 0;
