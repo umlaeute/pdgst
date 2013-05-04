@@ -121,7 +121,7 @@ void pdgst_bin_add(t_pdgst_base*element)
 
   if(gst_bin_add(GST_BIN(gele), element->l_element)) {
   } else {
-    pd_error(element, "could not add element '%s' [%x] to bus", element->x_name->s_name, element);
+    pd_error(element, "could not add element '%s' [%p] to bus", element->x_name->s_name, element);
     return;
   }
   handler=g_signal_connect (bus, "message", G_CALLBACK(pdgst_buscallback), element);
@@ -133,7 +133,6 @@ void pdgst_bin_add(t_pdgst_base*element)
 
 void pdgst_bin_remove(t_pdgst_base*element)
 {
-  GstState state, pending;
   GstElement*gele=pdgst__getcontainer(element);
 
   GstBus*bus=gst_pipeline_get_bus (GST_PIPELINE (gele));
@@ -145,25 +144,28 @@ void pdgst_bin_remove(t_pdgst_base*element)
 
   if(NULL==lmn) {
     /* no element of this name in our pipeline... */
-    verbose(1, "element %x not in bin", element);
+    verbose(1, "element %p not in bin", element);
     return;
   }
   gst_object_unref (lmn); /* since we own bus returned by gst_bin_get_by_name() */
 
   if(id) {
-    verbose(2, "removing buscallback-handler %d for %x: ", id, element);
+    verbose(2, "removing buscallback-handler %d for %p: ", (int)id, element);
     if (g_signal_handler_is_connected (bus, id)) {
       g_signal_handler_disconnect (bus, id);
     }
     element->l_sighandler_bin=0;
   } else {
-    verbose(2, "no buscallback-handler to remove for element %x", element);
+    verbose(2, "no buscallback-handler to remove for element %p", element);
   }
   gst_bus_set_flushing(bus, TRUE) ;
 
   gst_object_unref (bus); /* since we own bus returned by gst_pipeline_get_bus() */
 
   GstStateChangeReturn ret=gst_element_set_state (element->l_element, GST_STATE_NULL); // this can halt the system, don't know why yet...
+  if(GST_STATE_CHANGE_FAILURE == ret) {
+    error("failed to to to NULL-state");
+  }
   if(!gst_bin_remove(GST_BIN(gele), element->l_element)) {
     error("could not remove '%s' from pipeline", element->x_gstname->s_name);
   }
@@ -175,6 +177,7 @@ void pdgst_bin_remove(t_pdgst_base*element)
 
 static void pdgst__gstMess(t_pdgst*x, t_symbol*s, int argc, t_atom*argv) {
   //post("ignoring message:: __gst: %s", s->s_name);
+  if(x || s || argv || argc) {}
 }
 
 
@@ -241,11 +244,11 @@ static gboolean pdgst__bus_callback (GstBus     *bus,
   t_pdgst*x=(t_pdgst*)data;
   // post("bus %x, got message '%s'", x, GST_MESSAGE_TYPE_NAME (message));
 
+#if 0
   GstElement*src=NULL;
   if(GST_IS_ELEMENT(GST_MESSAGE_SRC(message)))
     src=GST_ELEMENT(GST_MESSAGE_SRC(message));
 
-#if 0
   if(src) {
     gchar *name;
     g_object_get (G_OBJECT (src), "name", &name, NULL);
@@ -342,7 +345,7 @@ static void pdgst__free(t_pdgst*x) {
 }
 
 void cb_message_error (GstBus*bus,GstMessage*msg,t_pdgst*x) {
-  verbose(1, "%x is a message!", msg);
+  verbose(1, "%p is a message!", msg);
   verbose(1, "message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
 }
 

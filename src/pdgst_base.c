@@ -547,26 +547,26 @@ static void pdgst_base__busmsg(t_pdgst_base*x, GstMessage*message) {
 /* LATER: move this into pdgst_base */
 void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
   GstElement*src=NULL;
-  //  post("buscallback %x %x %x", bus, msg, x);
+  //  post("buscallback %p %p %p", bus, msg, x);
   if(NULL==x) {
     verbose(1, "NULL object passed to gst-buscallback");
     return;
   }
 
   if(NULL==x->x_name  || NULL==x->x_name->s_name) {
-    verbose(1, "unnamed object %x passed to gst-buscallback", x);
+    verbose(1, "unnamed object %p passed to gst-buscallback", x);
     return;
   }
 
   if(!G_IS_OBJECT(x->l_element)) {
-    error("invalid gst-object %x of object %x", x->l_element, x);
+    error("invalid gst-object %p of object %p", x->l_element, x);
     return;
   }
 
 #if 0
   post("message type is '%s'", GST_MESSAGE_TYPE_NAME (msg));
 
-  startpost("buscallback for %x", x);  if(x) {startpost("-> %x", x->x_name);  if(x->x_name) {startpost("= %x ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
+  startpost("buscallback for %p", x);  if(x) {startpost("-> %p", x->x_name);  if(x->x_name) {startpost("= %p ", x->x_name->s_name); startpost("=:  '%s'", x->x_name->s_name); } } endpost();
 #endif
 
   //  post("pdgst__element_buscallback: %d", __LINE__);
@@ -586,7 +586,7 @@ void pdgst_base__buscallback (GstBus*bus,GstMessage*msg,t_pdgst_base*x) {
   if(1) {
     gchar *name0=NULL, *name1=NULL;
     g_object_get (G_OBJECT (src), "name", &name0, NULL);
-    startpost("x->element[%x]=", x->l_element);
+    startpost("x->element[%p]=", x->l_element);
     g_object_get (G_OBJECT (x->l_element), "name", &name1, NULL);
     post("%s", name1);  post("cb from '%s' for '%s':: '%s'", name0, name1,  GST_MESSAGE_TYPE_NAME(msg));
     g_free (name0);
@@ -631,12 +631,12 @@ static void pdgst_base__padcb_added (GstElement *element, GstPad     *pad, t_pdg
   case GST_PAD_SINK:
     break;
   default:
-    pd_error(x, "[%s] added pad with unknown direction...");
+    pd_error(x, "[%s] added pad with unknown direction...", x->x_name->s_name);
   }
 }
 static void pdgst_base__padcb_removed (GstElement *element, GstPad     *pad, t_pdgst_base*x)
 {
-  //  post("padcb_removal{ %x %x", x, element);
+  //  post("padcb_removal{ %p %p", x, element);
 
   switch (gst_pad_get_direction(pad)) {
   case GST_PAD_SRC: {
@@ -651,7 +651,7 @@ static void pdgst_base__padcb_removed (GstElement *element, GstPad     *pad, t_p
   case GST_PAD_SINK:
     break;
   default:
-    pd_error(x, "[%s] removed pad with unknown direction...");
+    pd_error(x, "[%s] removed pad with unknown direction...", x->x_name->s_name);
   }
   //  post("}padcb_removed");
 }
@@ -685,7 +685,7 @@ static void pdgst_base__del_signals(t_pdgst_base*x) {
 void pdgst_base__free(t_pdgst_base*x)
 {
   GstElement*lmn=x->l_element;
-  //  post("pdgst_base_free: %x", x);
+  //  post("pdgst_base_free: %p", x);
   /* cleanup the Pd-part */
   if(x->x_bindobject) {
     t_pd*bindobject=x->x_bindobject;
@@ -721,7 +721,7 @@ void pdgst_base__free(t_pdgst_base*x)
     outlet_free(x->x_infout);
   x->x_infout=NULL;
 
-  //  post("pdgst_base_freed: %x", x);
+  //  post("pdgst_base_freed: %p", x);
 }
 
 
@@ -781,7 +781,7 @@ void pdgst_base__new(t_pdgst_base*x, t_symbol*s, t_pd*bindobject)
  */
 t_symbol*pdgst_base__bindsym(t_pdgst_base*x) {
   char bindname[MAXPDSTRING];
-  snprintf(bindname, MAXPDSTRING, "__gst__0x%x ", x);
+  snprintf(bindname, MAXPDSTRING, "__gst__0x%p ", x);
   bindname[MAXPDSTRING-1]=0;
   return gensym(bindname);
 }

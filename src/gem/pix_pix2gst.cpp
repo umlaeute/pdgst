@@ -115,7 +115,7 @@ void pix_pix2gst :: render(GemState *state)
 
   img=&pix->image;
 
-  if(img->xsize!=m_width || img->ysize!=m_height || img->format!=m_format) {
+  if(img->xsize!=(int)m_width || img->ysize!=(int)m_height || img->format!=m_format) {
     error("pix does not match %dx%d", m_width, m_height);
     return;
   }
