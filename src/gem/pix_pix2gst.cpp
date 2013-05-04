@@ -28,8 +28,11 @@ CPPEXTERN_NEW_WITH_FOUR_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLO
 // Constructor
 //
 /////////////////////////////////////////////////////////
-pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h, t_floatarg fps)  : pdgstGem("appsrc"),
-                                                                       m_width(0), m_height(0), m_fps_numerator(0), m_format(-1)
+pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h, t_floatarg fps)  : 
+  pdgstGem("appsrc"),
+  m_width(0), m_height(0), 
+  m_format(-1), 
+  m_fps_numerator(20), m_fps_denominator(1)
 {
   if(w<0)w=128;
   if(h<0)h=128;
