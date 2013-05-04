@@ -24,15 +24,14 @@ you could also use `apt-get` instead of `aptitude`
 
 build
 -----
-    $ make PD_SRC=/usr/include/pd GEM_SRC=/usr/include/Gem
+    $ make PD_INCLUDE=/usr/include/pd GEM_INCLUDE=/usr/include/Gem
 
 install
 -------
-currently you have to manually install PdGst.
-simply copy all `*.pd_linux` files to some place,
-where Pd can find it. e.g. "~/pd-externals"
-    $ mkdir -p ~/pd-externals
-    $ find . -type f -name "*.pd_linux" -exec cp \{\} ~/pd-externals/ \;
+    for a system-wide installation run (as root, e.g. using `sudo`):
+    # make install
+    if you only want to install per-user, you can run
+    $ make install pkglibdir=~/pd-externals
 
 
 documentation
