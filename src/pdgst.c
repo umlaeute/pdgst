@@ -22,6 +22,7 @@
 #include "pdgst/pdgst.h"
 
 void  pdgst__setup(void);
+void  pdgst_adc_tilde_setup(void);
 void  pdgst_dac_tilde_setup(void);
 
 
@@ -30,7 +31,6 @@ void pdgst_objects_setup(void){
 #ifdef PDGST_CAPSFILTER
   pdgst_capsfilter_setup();
 #endif
-
 
   pdgst_dac_tilde_setup();
   pdgst_adc_tilde_setup();
