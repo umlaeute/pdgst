@@ -16,8 +16,8 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include "pdgstGem.h"
-
 #include <algorithm>
+#include <string>
 
 #ifdef x_obj
 # undef x_obj
