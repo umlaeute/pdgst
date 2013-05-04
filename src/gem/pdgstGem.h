@@ -13,7 +13,14 @@
 #define INCLUDE_PDGSTGEM_H_
 
 #include "Base/GemBase.h"
-#include "Base/GemPixUtil.h"
+#if GEM_VERSION_MINOR < 93
+# include "Base/GemPixUtil.h"
+# include "Base/GemState.h"
+#else
+# include "Gem/Image.h"
+# include "Gem/State.h"
+# include "Gem/Exception.h"
+#endif
 
 #include "pdgst/pdgst.h"
 

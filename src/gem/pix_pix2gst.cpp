@@ -11,8 +11,6 @@
 /////////////////////////////////////////////////////////
 
 #include "pix_pix2gst.h"
-#include "Base/GemState.h"
-#include "Gem/Exception.h"
 
 #include <gst/app/gstappsrc.h>
 #include <gst/base/gstadapter.h>

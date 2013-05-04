@@ -12,8 +12,6 @@
 
 #include "pix_gst2pix.h"
 
-#include "Base/GemState.h"
-
 #include <gst/app/gstappsink.h>
 #include <gst/base/gstadapter.h>
 
