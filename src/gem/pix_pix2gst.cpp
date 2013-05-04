@@ -12,13 +12,13 @@
 
 #include "pix_pix2gst.h"
 #include "Base/GemState.h"
-
+#include "Gem/Exception.h"
 
 #include <gst/app/gstappsrc.h>
 #include <gst/base/gstadapter.h>
 
 
-CPPEXTERN_NEW_WITH_FOUR_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT, t_floatarg, A_FLOAT);
+CPPEXTERN_NEW_WITH_GIMME(pix_pix2gst);
 
 /////////////////////////////////////////////////////////
 //
@@ -28,21 +28,39 @@ CPPEXTERN_NEW_WITH_FOUR_ARGS(pix_pix2gst, t_symbol*, A_SYMBOL, t_floatarg, A_FLO
 // Constructor
 //
 /////////////////////////////////////////////////////////
-pix_pix2gst :: pix_pix2gst( t_symbol*s, t_floatarg w, t_floatarg h, t_floatarg fps)  : 
+pix_pix2gst :: pix_pix2gst( int argc, t_atom*argv ) :
   pdgstGem("appsrc"),
-  m_width(0), m_height(0), 
-  m_format(-1), 
+  m_width(0), m_height(0),
+  m_format(-1),
   m_fps_numerator(20), m_fps_denominator(1)
 {
+  if(argc<3 || !(A_SYMBOL==argv[0].a_type&&A_FLOAT==argv[1].a_type&&A_FLOAT==argv[2].a_type)) {
+    throw(GemException("<colorspace> <width> <height> [<framerate>]"));
+  }
+  t_symbol*s=atom_getsymbol(argv+0);
+  int w=atom_getint(argv+1);
+  int h=atom_getint(argv+2);
   if(w<0)w=128;
   if(h<0)h=128;
-  if(fps<0)fps=20;
-  
+
+  if(argc>3) {
+    if (A_FLOAT==argv[3].a_type) {
+      float fps=atom_getfloat(argv+3);
+      if(fps<0)fps=20.;
+      m_fps_numerator = fps*1000;
+      m_fps_denominator = 1000;
+    } else {
+      t_symbol*fps=atom_getsymbol(argv+3);
+      int num, denom;
+      if(sscanf(fps->s_name, "%d/%d", &num, &denom)==2) {
+	m_fps_numerator=num;
+	m_fps_denominator = denom;
+      }
+    }
+  }
+
   m_width=w;
   m_height=h;
-
-  m_fps_numerator = fps;
-  m_fps_denominator = 1;
 
   GstCaps*caps=color2caps(s);
   m_format=m_image->format;
