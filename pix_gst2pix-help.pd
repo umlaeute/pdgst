@@ -42,7 +42,7 @@
 #X obj 72 277 cnv 15 120 60 empty empty empty 20 12 0 14 -233017 -66577
 0;
 #X obj 79 287 pix_texture;
-#X obj 79 309 rectangle 4 3;
+#X obj 79 309 teapot 2;
 #X text 200 233 makes a gstreamer video-stream available as a pix.
 ;
 #X obj 235 160 cnv 15 150 60 empty empty empty 10 12 0 14 -203904 -66577
