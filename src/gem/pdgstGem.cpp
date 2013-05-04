@@ -186,6 +186,7 @@ GstElement*pdgstGem :: getPdGstElement()
 
 void pdgstGem :: obj_setupCallback(t_class *classPtr)
 {
+  if(!pdgst_init())return;
   class_addmethod(classPtr, (t_method)&pdgstGem::gstMessCallback,
                    s_pdgst__gst, A_GIMME, A_NULL);
   class_addmethod(classPtr, (t_method)&pdgstGem::infoMessCallback,
