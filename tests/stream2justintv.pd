@@ -55,7 +55,7 @@
 #X obj 198 340 ffenc_flv;
 #X obj 198 297 videorate;
 #X obj 198 319 timeoverlay;
-#X msg 9 209 do-timestamp;
+#X msg 9 209 do-timestamp 1;
 #X obj 9 190 loadbang;
 #X msg 72 306 bitrate 500000;
 #X obj 279 342 loadbang;
